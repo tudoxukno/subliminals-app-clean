@@ -13,6 +13,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -38,6 +39,7 @@ const ActiveTextInputScreen: React.FC<ActiveTextInputScreenProps> = ({ route }) 
   const navigation = useNavigation<NavigationProp>();
   const [userInput, setUserInput] = useState(route?.params?.initialText || '');
   const textInputRef = useRef<TextInput>(null);
+  const colorScheme = useColorScheme(); // Detect system theme
 
   useEffect(() => {
     // Auto-focus the text input when the screen loads with minimal delay
@@ -112,10 +114,12 @@ const ActiveTextInputScreen: React.FC<ActiveTextInputScreenProps> = ({ route }) 
                   autoFocus
                   enablesReturnKeyAutomatically={false}
                   scrollEnabled={false}
-                  // iOS specific props to improve keyboard behavior
-                  keyboardAppearance="dark"
-                  autoCorrect={false}
-                  spellCheck={false}
+                  // Smart keyboard features with system theme
+                  keyboardAppearance={colorScheme === 'dark' ? 'dark' : 'light'}
+                  autoCorrect={true}
+                  spellCheck={true}
+                  autoCapitalize="sentences"
+                  textContentType="none"
                 />
                 
                 {/* Submit Button - White square with black arrow */}
