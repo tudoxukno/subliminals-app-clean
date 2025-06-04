@@ -7,6 +7,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import FullSubliminalView from './src/screens/FullSubliminalView';
 import ShareSuiteScreen from './src/screens/ShareSuiteScreen';
 import ArchetypeSelectionScreen from './src/screens/ArchetypeSelectionScreen';
+import ActiveTextInputScreen from './src/screens/ActiveTextInputScreen';
 import SplashScreen from './src/components/SplashScreen';
 import { Platform } from 'react-native';
 import { ActiveStateProvider } from './src/context/ActiveStateContext';
@@ -49,6 +50,14 @@ export default function App() {
             <Stack.Screen 
               name="Home" 
               component={HomeScreen}
+              options={{
+                animation: 'fade' as const,
+                gestureEnabled: false,
+              }}
+            />
+            <Stack.Screen 
+              name="ActiveTextInput" 
+              component={ActiveTextInputScreen}
               options={{
                 animation: 'fade' as const,
                 gestureEnabled: false,

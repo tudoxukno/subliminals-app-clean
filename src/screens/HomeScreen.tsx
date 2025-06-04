@@ -29,6 +29,7 @@ type RootStackParamList = {
   Home: undefined;
   Saved: undefined;
   Settings: undefined;
+  ActiveTextInput: { initialText?: string };
   ArchetypeSelection: { userInput: string };
 };
 
@@ -248,62 +249,12 @@ const HomeScreen = () => {
   }, []);
 
   const handleFocus = () => {
-    setIsFocused(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    // Animate logo to top-left
-    Animated.parallel([
-      Animated.timing(logoAnimation, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
-      // Hide main content
-      Animated.timing(contentAnimation, {
-        toValue: 0,
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      // Show input container
-      Animated.timing(inputContainerAnimation, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Navigate to ActiveTextInputScreen instead of showing focused state
+    navigation.navigate('ActiveTextInput', { initialText: userInput });
   };
 
   const handleBlur = () => {
-    if (userInput.trim() === '') {
-    setIsFocused(false);
-      
-      // Animate back to center
-      Animated.parallel([
-        Animated.timing(logoAnimation, {
-          toValue: 0,
-          duration: 300,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: false,
-        }),
-        // Show main content
-        Animated.timing(contentAnimation, {
-          toValue: 1,
-          duration: 300,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        // Hide input container
-        Animated.timing(inputContainerAnimation, {
-          toValue: 0,
-          duration: 300,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+    // Remove the blur logic since we're navigating away
   };
 
   const handleSubmit = () => {
@@ -315,8 +266,8 @@ const HomeScreen = () => {
 
   const handleQuickstartPress = (prompt: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setUserInput(prompt);
-    navigation.navigate('ArchetypeSelection', { userInput: prompt });
+    // Navigate to ActiveTextInputScreen with the prompt pre-filled
+    navigation.navigate('ActiveTextInput', { initialText: prompt });
   };
 
   const dismissKeyboard = () => {
@@ -355,135 +306,80 @@ const HomeScreen = () => {
     outputRange: [0, -width * 0.3], // Move logo left when focused
   });
 
+  const handleNewPress = () => {
+    navigation.navigate('ActiveTextInput', { initialText: '' });
+  };
+
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <LinearGradient
         colors={['#0A0A0A', '#141414']}
-          style={styles.container}
-        >
-          <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="light-content" />
-            
-          {/* Main Content - Only show when NOT focused */}
-          {!isFocused && (
-            <Animated.View style={[styles.mainContent, { opacity: contentAnimation }]}>
-              {/* Logo */}
-              <TouchableOpacity onPress={handleLogoPress} activeOpacity={0.8}>
-                  <Image 
-                    source={require('../../assets/images/logo.png')} 
-                  style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-              
-              {/* App Title */}
-              <Text style={styles.appName}>Subliminals</Text>
-              
-              {/* Subtitle */}
-              <Text style={styles.subtitle}>What's on your mind?</Text>
-              
-              {/* Text Input */}
-              <View style={styles.inputSection}>
-                <TextInputField
-                  ref={textInputRef}
-                  value={userInput}
-                  onChangeText={setUserInput}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                  onContentSizeChange={handleContentSizeChange}
-                  onSubmitEditing={handleSubmit}
-                  minHeight={INPUT_MIN_HEIGHT}
-                  inputHeight={inputHeight}
-                />
-              </View>
-              
-              {/* Quickstart Section */}
-              <View style={styles.quickstartSection}>
-                <View style={styles.quickstartHeader}>
-                  <Text style={styles.quickstartTitle}>Need some ideas to get started?</Text>
-                  <TouchableOpacity onPress={refreshQuickstarts} style={styles.refreshButton}>
-                    <Ionicons name="refresh" size={20} color="#666" />
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.quickstartGrid}>
-                  {quickstartPrompts[0]?.map((prompt, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.quickstartPill}
-                      onPress={() => handleQuickstartPress(prompt)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.quickstartText}>{prompt}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </Animated.View>
-          )}
+        style={styles.container}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar barStyle="light-content" />
           
-          {/* Focused State - Small logo in corner */}
-          {isFocused && (
-            <Animated.View 
-              style={[
-                styles.focusedLogoContainer,
-                {
-                  transform: [
-                    { translateY: logoTop },
-                    { translateX: logoLeft },
-                    { scale: logoScale }
-                  ],
-                  opacity: inputContainerAnimation,
-                }
-              ]}
-            >
-              <TouchableOpacity onPress={handleLogoPress}>
-                <Image 
-                  source={require('../../assets/images/logo.png')}
-                  style={styles.focusedLogo}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </Animated.View>
-            )}
-
-          {/* Input Container for Focused State */}
-          {isFocused && (
-            <Animated.View 
-              style={[
-              styles.inputContainer,
-                { opacity: inputContainerAnimation }
-              ]}
-            >
-              <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.keyboardAvoidingView}
-              >
-                <TextInputField
-                  isFocused={true}
-                  value={userInput}
-                  onChangeText={setUserInput}
+          {/* Main Content - Always show since we removed focused state */}
+          <Animated.View style={[styles.mainContent, { opacity: contentAnimation }]}>
+            {/* Logo */}
+            <TouchableOpacity onPress={handleLogoPress} activeOpacity={0.8}>
+              <Image 
+                source={require('../../assets/images/logo.png')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            
+            {/* App Title */}
+            <Text style={styles.appName}>Subliminals</Text>
+            
+            {/* Subtitle */}
+            <Text style={styles.subtitle}>What's on your mind?</Text>
+            
+            {/* Text Input */}
+            <View style={styles.inputSection}>
+              <TextInputField
+                ref={textInputRef}
+                value={userInput}
+                onChangeText={setUserInput}
+                onFocus={handleFocus}
                 onBlur={handleBlur}
                 onContentSizeChange={handleContentSizeChange}
-                  onSubmitEditing={handleSubmit}
-                  inputHeight={inputHeight}
-                  autoFocus
-                />
-                
-                {userInput.trim() && (
-                  <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Ionicons name="arrow-forward" size={24} color="#fff" />
+                onSubmitEditing={handleSubmit}
+                minHeight={INPUT_MIN_HEIGHT}
+                inputHeight={inputHeight}
+              />
+            </View>
+            
+            {/* Quickstart Section */}
+            <View style={styles.quickstartSection}>
+              <View style={styles.quickstartHeader}>
+                <Text style={styles.quickstartTitle}>Need some ideas to get started?</Text>
+                <TouchableOpacity onPress={refreshQuickstarts} style={styles.refreshButton}>
+                  <Ionicons name="refresh" size={20} color="#666" />
                 </TouchableOpacity>
-              )}
-              </KeyboardAvoidingView>
-              </Animated.View>
-            )}
+              </View>
+              
+              <View style={styles.quickstartGrid}>
+                {quickstartPrompts[0]?.map((prompt, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.quickstartPill}
+                    onPress={() => handleQuickstartPress(prompt)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.quickstartText}>{prompt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </Animated.View>
 
           {/* Bottom Navigation */}
-              <View style={styles.bottomNavContainer}>
-            <BottomNav />
-                </View>
-          </SafeAreaView>
+          <View style={styles.bottomNavContainer}>
+            <BottomNav onNewPress={handleNewPress} />
+          </View>
+        </SafeAreaView>
       </LinearGradient>
     </TouchableWithoutFeedback>
   );
@@ -566,38 +462,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#fff',
     textAlign: 'left',
-  },
-  focusedLogoContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? STATUS_BAR_HEIGHT + 40 : 60,
-    left: 20,
-    zIndex: 10,
-  },
-  focusedLogo: {
-    width: 60,
-    height: 60,
-  },
-  inputContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: 20,
-    right: 20,
-    transform: [{ translateY: -100 }],
-    zIndex: 5,
-  },
-  keyboardAvoidingView: {
-    position: 'relative',
-  },
-  submitButton: {
-    position: 'absolute',
-    bottom: 15,
-    right: 15,
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   bottomNavContainer: {
     position: 'absolute',
