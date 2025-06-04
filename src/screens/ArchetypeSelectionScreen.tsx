@@ -23,6 +23,7 @@ import * as Haptics from 'expo-haptics';
 
 import { generateSubliminalContent, generateSubliminalContentFast, generateBackgroundImage } from '../services/api';
 import { ArchetypeCardSkeleton } from '../components/ArchetypeCardSkeleton';
+import { useDailyUsage } from '../context/DailyUsageContext';
 
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -157,6 +158,7 @@ const ArchetypeSelectionScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { userInput } = route.params;
+  const { incrementUsage, canGenerate, isLimitReached } = useDailyUsage();
   const scrollViewRef = useRef<ScrollView>(null);
   const [loadingArchetype, setLoadingArchetype] = useState<string | null>(null);
   const [archetypeResponses, setArchetypeResponses] = useState<{[key: string]: ArchetypeData}>({});
@@ -215,53 +217,59 @@ const ArchetypeSelectionScreen = () => {
   // Generate preview content for all archetypes when screen loads (fast text-only)
   useEffect(() => {
     const generatePreviews = async () => {
-      const responses: {[key: string]: ArchetypeData} = {};
-      
-      // Use Promise.all for parallel text generation (much faster)
-      const archetypePromises = Object.entries(ARCHETYPES).map(async ([archetype, config]) => {
-        try {
-          const generatedContent = await generateSubliminalContentFast(userInput, archetype);
-          return { archetype, data: parseOpenAIResponse(generatedContent, archetype) };
-        } catch (error) {
-          console.error(`Error generating preview for ${archetype}:`, error);
-          // Fallback preview
-          return {
-            archetype,
-            data: {
-              icon: config.icon,
-              response: `Let me reflect on "${userInput}" with you...`,
-              fullMessage: `Your feelings about "${userInput}" deserve attention and understanding.`,
-              quote: "Every feeling has wisdom to offer.",
-              tags: config.tags
-            }
-          };
-        }
-      });
+      if (!canGenerate) {
+        // If daily limit is reached, show a message or redirect
+        console.log('Daily limit reached, cannot generate previews');
+        setIsGeneratingPreviews(false);
+        return;
+      }
 
-      // Wait for all text content to be generated in parallel
-      const results = await Promise.all(archetypePromises);
-      
-      // Set all responses at once
-      results.forEach(({ archetype, data }) => {
-        responses[archetype] = data;
-      });
-      
-      setArchetypeResponses(responses);
-      setIsGeneratingPreviews(false);
+      try {
+        console.log('🎯 Starting fast preview generation for user input:', userInput);
+        setIsGeneratingPreviews(true);
 
-      // Start generating backgrounds progressively (non-blocking)
-      setTimeout(() => {
-        Object.entries(responses).forEach(([archetype, data], index) => {
-          // Stagger background generation to avoid rate limits
-          setTimeout(() => {
-            generateArchetypeBackground(archetype, data);
-          }, index * 2000); // 2 second delay between each background generation
+        // Generate all archetype previews in parallel
+        const archetypeNames = Object.keys(ARCHETYPES);
+        console.log('🎭 Generating previews for archetypes:', archetypeNames);
+
+        const promises = archetypeNames.map(async (archetype) => {
+          try {
+            console.log(`⚡ Fast generating ${archetype} preview...`);
+            const response = await generateSubliminalContentFast(userInput, archetype);
+            console.log(`✅ ${archetype} preview generated successfully`);
+            return { archetype, response };
+          } catch (error) {
+            console.error(`❌ Error generating ${archetype} preview:`, error);
+            return { archetype, response: null };
+          }
         });
-      }, 500); // Start after a short delay
+
+        const results = await Promise.all(promises);
+        
+        // Track usage after successful generation
+        await incrementUsage();
+        console.log('📊 Daily usage incremented after generation');
+
+        // Process responses
+        const newResponses: {[key: string]: ArchetypeData} = {};
+        results.forEach(({ archetype, response }) => {
+          if (response) {
+            newResponses[archetype] = parseOpenAIResponse(response, archetype);
+          }
+        });
+
+        setArchetypeResponses(newResponses);
+        setIsGeneratingPreviews(false);
+
+        console.log('🎉 All previews generated and stored');
+      } catch (error) {
+        console.error('💥 Error in generatePreviews:', error);
+        setIsGeneratingPreviews(false);
+      }
     };
 
     generatePreviews();
-  }, [userInput]);
+  }, [userInput, canGenerate]);
 
   const handleGoBack = () => {
     navigation.reset({

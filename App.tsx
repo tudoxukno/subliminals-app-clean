@@ -12,6 +12,7 @@ import SplashScreen from './src/components/SplashScreen';
 import { Platform } from 'react-native';
 import { ActiveStateProvider } from './src/context/ActiveStateContext';
 import { AuthProvider } from './src/context/AuthContext';
+import { DailyUsageProvider } from './src/context/DailyUsageContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,66 +43,68 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <ActiveStateProvider>
-        <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={screenOptions}
-          >
-            <Stack.Screen 
-              name="Home" 
-              component={HomeScreen}
-              options={{
-                animation: 'fade' as const,
-                gestureEnabled: false,
-              }}
-            />
-            <Stack.Screen 
-              name="ActiveTextInput" 
-              component={ActiveTextInputScreen}
-              options={{
-                animation: 'fade' as const,
-                gestureEnabled: false,
-              }}
-            />
-            <Stack.Screen 
-              name="Saved" 
-              component={SavedSubliminalsScreen}
-              options={{
-                animation: 'slide_from_right' as const,
-              }}
-            />
-            <Stack.Screen 
-              name="Settings" 
-              component={SettingsScreen}
-              options={{
-                animation: 'slide_from_right' as const,
-              }}
-            />
-            <Stack.Screen 
-              name="ArchetypeSelection" 
-              component={ArchetypeSelectionScreen}
-              options={{
-                animation: 'fade' as const,
-                gestureEnabled: false,
-              }}
-            />
-            <Stack.Screen 
-              name="FullSubliminalView" 
-              component={FullSubliminalView}
-              options={{
-                animation: 'slide_from_right' as const,
-              }}
-            />
-            <Stack.Screen 
-              name="ShareSuite" 
-              component={ShareSuiteScreen}
-              options={{
-                animation: 'slide_from_right' as const,
-              }}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </ActiveStateProvider>
+      <DailyUsageProvider>
+        <ActiveStateProvider>
+          <NavigationContainer>
+            <Stack.Navigator
+              screenOptions={screenOptions}
+            >
+              <Stack.Screen 
+                name="Home" 
+                component={HomeScreen}
+                options={{
+                  animation: 'fade' as const,
+                  gestureEnabled: false,
+                }}
+              />
+              <Stack.Screen 
+                name="ActiveTextInput" 
+                component={ActiveTextInputScreen}
+                options={{
+                  animation: 'fade' as const,
+                  gestureEnabled: false,
+                }}
+              />
+              <Stack.Screen 
+                name="Saved" 
+                component={SavedSubliminalsScreen}
+                options={{
+                  animation: 'slide_from_right' as const,
+                }}
+              />
+              <Stack.Screen 
+                name="Settings" 
+                component={SettingsScreen}
+                options={{
+                  animation: 'slide_from_right' as const,
+                }}
+              />
+              <Stack.Screen 
+                name="ArchetypeSelection" 
+                component={ArchetypeSelectionScreen}
+                options={{
+                  animation: 'fade' as const,
+                  gestureEnabled: false,
+                }}
+              />
+              <Stack.Screen 
+                name="FullSubliminalView" 
+                component={FullSubliminalView}
+                options={{
+                  animation: 'slide_from_right' as const,
+                }}
+              />
+              <Stack.Screen 
+                name="ShareSuite" 
+                component={ShareSuiteScreen}
+                options={{
+                  animation: 'slide_from_right' as const,
+                }}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </ActiveStateProvider>
+      </DailyUsageProvider>
     </AuthProvider>
   );
 }

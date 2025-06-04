@@ -23,6 +23,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { BottomNav } from '../components/BottomNav';
 import TextInputField from '../components/TextInputField';
+import { DailyLimitBanner } from '../components/DailyLimitBanner';
+import { useDailyUsage } from '../context/DailyUsageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RootStackParamList = {
@@ -232,6 +234,7 @@ const HomeScreen = () => {
   const logoAnimation = useRef(new Animated.Value(0)).current;
   const contentAnimation = useRef(new Animated.Value(1)).current;
   const inputContainerAnimation = useRef(new Animated.Value(0)).current;
+  const { incrementUsage } = useDailyUsage();
 
   const quickstartOptions = [
     [
@@ -259,15 +262,13 @@ const HomeScreen = () => {
 
   const handleSubmit = () => {
     if (userInput.trim()) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       navigation.navigate('ArchetypeSelection', { userInput: userInput.trim() });
     }
   };
 
   const handleQuickstartPress = (prompt: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Navigate to ActiveTextInputScreen with the prompt pre-filled
-    navigation.navigate('ActiveTextInput', { initialText: prompt });
+    trackQuickstartUsage(prompt);
+    navigation.navigate('ArchetypeSelection', { userInput: prompt });
   };
 
   const dismissKeyboard = () => {
@@ -310,6 +311,11 @@ const HomeScreen = () => {
     navigation.navigate('ActiveTextInput', { initialText: '' });
   };
 
+  const handleUpgradePress = () => {
+    // TODO: Navigate to paywall when implemented
+    console.log('Upgrade pressed - navigate to paywall');
+  };
+
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <LinearGradient
@@ -318,6 +324,9 @@ const HomeScreen = () => {
       >
         <SafeAreaView style={styles.safeArea}>
           <StatusBar barStyle="light-content" />
+          
+          {/* Daily Limit Banner - positioned at the top */}
+          <DailyLimitBanner onUpgradePress={handleUpgradePress} />
           
           {/* Main Content - Always show since we removed focused state */}
           <Animated.View style={[styles.mainContent, { opacity: contentAnimation }]}>

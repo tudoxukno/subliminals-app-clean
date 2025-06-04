@@ -25,6 +25,10 @@ import { TermsModal } from '../components/TermsModal';
 import { clearAllSavedSubliminals, getStorageInfo, forceMigration } from '../utils/storage';
 import { useAuth } from '../context/AuthContext';
 import subscriptionService from '../services/subscriptionService';
+import { DailyUsageDebug } from '../components/DailyUsageDebug';
+
+// TEMPORARY: Import this to check if we're in testing mode
+const FIREBASE_ENABLED = false;
 
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
 
@@ -105,8 +109,15 @@ const SettingsScreen = () => {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
+  // Subscription testing state (only when Firebase disabled)
+  const [currentSubscriptionState, setCurrentSubscriptionState] = useState<'free' | 'premium'>('free');
+  const [showDebugModal, setShowDebugModal] = useState(false);
+
   useEffect(() => {
     loadStorageInfo();
+    if (!FIREBASE_ENABLED) {
+      loadSubscriptionState();
+    }
   }, [user]);
 
   const loadStorageInfo = async () => {
@@ -115,6 +126,34 @@ const SettingsScreen = () => {
       setStorageInfo(info);
     } catch (error) {
       console.error('Error loading storage info:', error);
+    }
+  };
+
+  const loadSubscriptionState = async () => {
+    try {
+      const subscription = await subscriptionService.getCurrentSubscription();
+      setCurrentSubscriptionState(subscription.isActive && subscription.tier !== 'free' ? 'premium' : 'free');
+    } catch (error) {
+      console.error('Error loading subscription state:', error);
+    }
+  };
+
+  const handleToggleSubscription = async () => {
+    try {
+      if (currentSubscriptionState === 'free') {
+        // Switch to premium
+        subscriptionService.simulatePremium('monthly');
+        setCurrentSubscriptionState('premium');
+        Alert.alert('✅ Premium Activated', 'You now have unlimited daily entries and can test the banner states.');
+      } else {
+        // Switch to free
+        subscriptionService.resetToFree();
+        setCurrentSubscriptionState('free');
+        Alert.alert('🔄 Free Account', 'You now have 3 daily entries and will see the usage banner.');
+      }
+    } catch (error) {
+      console.error('Error toggling subscription:', error);
+      Alert.alert('Error', 'Failed to toggle subscription state.');
     }
   };
 
@@ -342,6 +381,41 @@ const SettingsScreen = () => {
               />
             </View>
 
+            {/* Subscription Testing Section - Only show when Firebase disabled */}
+            {!FIREBASE_ENABLED && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>🧪 Subscription Testing</Text>
+                <SettingsItem
+                  title="Current State"
+                  subtitle={currentSubscriptionState === 'premium' ? 'Premium (Unlimited entries)' : 'Free (3 entries/day)'}
+                  rightElement={
+                    <TouchableOpacity
+                      style={[
+                        styles.toggleButton,
+                        currentSubscriptionState === 'premium' ? styles.premiumButton : styles.freeButton
+                      ]}
+                      onPress={handleToggleSubscription}
+                    >
+                      <Text style={[
+                        styles.toggleButtonText,
+                        currentSubscriptionState === 'premium' ? styles.premiumButtonText : styles.freeButtonText
+                      ]}>
+                        {currentSubscriptionState === 'premium' ? 'Switch to Free' : 'Switch to Premium'}
+                      </Text>
+                    </TouchableOpacity>
+                  }
+                />
+                <Text style={styles.testingNote}>
+                  Toggle between subscription states to test the daily usage banner and limits.
+                </Text>
+                <SettingsItem
+                  title="View Daily Usage Debug"
+                  subtitle="See detailed usage tracking info"
+                  onPress={() => setShowDebugModal(true)}
+                />
+              </View>
+            )}
+
             {/* Support Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Support</Text>
@@ -399,6 +473,26 @@ const SettingsScreen = () => {
             visible={showTermsModal}
             onClose={() => setShowTermsModal(false)}
           />
+
+          {/* Debug Modal - Only when Firebase disabled */}
+          {!FIREBASE_ENABLED && (
+            <Modal
+              visible={showDebugModal}
+              animationType="slide"
+              presentationStyle="pageSheet"
+              onRequestClose={() => setShowDebugModal(false)}
+            >
+              <View style={styles.debugModal}>
+                <View style={styles.debugHeader}>
+                  <Text style={styles.debugTitle}>Daily Usage Debug</Text>
+                  <TouchableOpacity onPress={() => setShowDebugModal(false)}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <DailyUsageDebug />
+              </View>
+            </Modal>
+          )}
 
           {/* Bottom Nav */}
           <BottomNav 
@@ -582,6 +676,51 @@ const styles = StyleSheet.create({
   switchModeText: {
     color: '#666',
     fontSize: 14,
+  },
+  toggleButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  premiumButton: {
+    backgroundColor: '#FF4444',
+  },
+  freeButton: {
+    backgroundColor: '#fff',
+  },
+  toggleButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  premiumButtonText: {
+    color: '#fff',
+  },
+  freeButtonText: {
+    color: '#666',
+  },
+  testingNote: {
+    color: '#666',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  debugModal: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
+  debugHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2B2B2B',
+  },
+  debugTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
