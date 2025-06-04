@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyAT7Y-85uLHrdd0KM4haoXOI3p2a0Xt3cg</string>
+	<key>GCM_SENDER_ID</key>
+	<string>133847835977</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.jaylon.subliminals</string>
+	<key>PROJECT_ID</key>
+	<string>subliminals-app</string>
+	<key>STORAGE_BUCKET</key>
+	<string>subliminals-app.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:133847835977:ios:f5a5b945a181f136ab2698</string>
+	<key>CLIENT_ID</key>
+	<string>133847835977-placeholder.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.133847835977-placeholder</string>
+</dict>
+</plist> 
