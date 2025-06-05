@@ -330,7 +330,7 @@ const HomeScreen = () => {
           <DailyLimitBanner onUpgradePress={handleUpgradePress} />
           
           {/* Daily Usage Ticker - small counter in top-right */}
-          <DailyUsageTicker />
+          <DailyUsageTicker onUpgradePress={handleUpgradePress} />
           
           {/* Main Content - Always show since we removed focused state */}
           <Animated.View style={[styles.mainContent, { opacity: contentAnimation }]}>
