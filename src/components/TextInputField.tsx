@@ -35,7 +35,7 @@ const TextInputField = forwardRef<TextInput, TextInputFieldProps>(({
         { height: calculatedHeight },
         style
       ]}
-      placeholder="Type anything..."
+      placeholder="What's on your mind..."
       placeholderTextColor="#666"
       multiline
       textAlignVertical="top"

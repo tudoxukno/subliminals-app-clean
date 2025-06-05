@@ -10,7 +10,7 @@ import {
   preGeneratePopularBackgrounds 
 } from './openai';
 import { generateSubliminalResponseWithGemini } from './gemini';
-import { GenerateRequest, GenerateResponse, RegenerateBackgroundRequest, RegenerateBackgroundResponse } from './types';
+import { GenerateRequest, GenerateResponse, RegenerateBackgroundRequest, RegenerateBackgroundResponse, Archetype } from './types';
 import { archetypes } from './archetypes';
 
 // Load environment variables
@@ -42,7 +42,7 @@ app.get('/cache-status', (req: Request, res: Response) => {
 // Get all archetypes
 app.get('/archetypes', (req: Request, res: Response) => {
   const archetypeEntries = Object.values(archetypes);
-  const archetypeList = archetypeEntries.map((archetype) => ({
+  const archetypeList = archetypeEntries.map((archetype: Archetype) => ({
     name: archetype.name,
     icon: archetype.icon,
     description: archetype.description

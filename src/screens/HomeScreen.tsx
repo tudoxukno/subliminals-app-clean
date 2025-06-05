@@ -204,16 +204,266 @@ const getContextualPrompts = (): string[] => {
   return contextualPrompts;
 };
 
-// Track used quickstarts
-const trackQuickstartUsage = async (prompt: string) => {
+// User Learning and Personalization System
+const PREFERENCE_CATEGORIES = {
+  emotional: ['anxious', 'sad', 'happy', 'angry', 'peaceful', 'overwhelmed', 'excited', 'lonely', 'grateful', 'hopeful'],
+  temporal: ['morning', 'afternoon', 'evening', 'lateNight'],
+  themes: ['creativity', 'relationships', 'work', 'family', 'health', 'spirituality', 'goals', 'past', 'future', 'change'],
+  tone: ['optimistic', 'reflective', 'struggling', 'growth-oriented', 'practical', 'poetic']
+};
+
+// Analyze user input to extract preferences
+const analyzeUserInput = (input: string): { categories: string[], themes: string[], sentiment: string } => {
+  const lowerInput = input.toLowerCase();
+  const categories: string[] = [];
+  const themes: string[] = [];
+  let sentiment = 'neutral';
+  
+  // Emotional analysis
+  if (lowerInput.includes('anxious') || lowerInput.includes('worry') || lowerInput.includes('nervous')) {
+    categories.push('anxious');
+    sentiment = 'negative';
+  }
+  if (lowerInput.includes('sad') || lowerInput.includes('down') || lowerInput.includes('depressed')) {
+    categories.push('sad');
+    sentiment = 'negative';
+  }
+  if (lowerInput.includes('happy') || lowerInput.includes('joy') || lowerInput.includes('excited')) {
+    categories.push('happy');
+    sentiment = 'positive';
+  }
+  if (lowerInput.includes('angry') || lowerInput.includes('frustrated') || lowerInput.includes('mad')) {
+    categories.push('angry');
+    sentiment = 'negative';
+  }
+  if (lowerInput.includes('peaceful') || lowerInput.includes('calm') || lowerInput.includes('serene')) {
+    categories.push('peaceful');
+    sentiment = 'positive';
+  }
+  if (lowerInput.includes('overwhelmed') || lowerInput.includes('too much') || lowerInput.includes('stressed')) {
+    categories.push('overwhelmed');
+    sentiment = 'negative';
+  }
+  if (lowerInput.includes('lonely') || lowerInput.includes('alone') || lowerInput.includes('isolated')) {
+    categories.push('lonely');
+    sentiment = 'negative';
+  }
+  if (lowerInput.includes('grateful') || lowerInput.includes('thankful') || lowerInput.includes('blessed')) {
+    categories.push('grateful');
+    sentiment = 'positive';
+  }
+  if (lowerInput.includes('hopeful') || lowerInput.includes('optimistic') || lowerInput.includes('better')) {
+    categories.push('hopeful');
+    sentiment = 'positive';
+  }
+  
+  // Theme analysis
+  if (lowerInput.includes('creative') || lowerInput.includes('art') || lowerInput.includes('inspire')) {
+    themes.push('creativity');
+  }
+  if (lowerInput.includes('relationship') || lowerInput.includes('love') || lowerInput.includes('partner')) {
+    themes.push('relationships');
+  }
+  if (lowerInput.includes('work') || lowerInput.includes('job') || lowerInput.includes('career')) {
+    themes.push('work');
+  }
+  if (lowerInput.includes('family') || lowerInput.includes('parent') || lowerInput.includes('child')) {
+    themes.push('family');
+  }
+  if (lowerInput.includes('health') || lowerInput.includes('body') || lowerInput.includes('fitness')) {
+    themes.push('health');
+  }
+  if (lowerInput.includes('spiritual') || lowerInput.includes('god') || lowerInput.includes('universe')) {
+    themes.push('spirituality');
+  }
+  if (lowerInput.includes('goal') || lowerInput.includes('achieve') || lowerInput.includes('succeed')) {
+    themes.push('goals');
+  }
+  if (lowerInput.includes('past') || lowerInput.includes('regret') || lowerInput.includes('memory')) {
+    themes.push('past');
+  }
+  if (lowerInput.includes('future') || lowerInput.includes('tomorrow') || lowerInput.includes('plan')) {
+    themes.push('future');
+  }
+  if (lowerInput.includes('change') || lowerInput.includes('different') || lowerInput.includes('transform')) {
+    themes.push('change');
+  }
+  
+  return { categories, themes, sentiment };
+};
+
+// Track user behavior and build preference profile
+const updateUserProfile = async (input: string, isQuickstart: boolean = false) => {
   try {
+    const profileKey = 'userLearningProfile';
+    const profileJson = await AsyncStorage.getItem(profileKey);
+    const profile = profileJson ? JSON.parse(profileJson) : {
+      quickstartUsage: {},
+      manualInputs: [],
+      preferenceWeights: {
+        emotional: {},
+        temporal: {},
+        themes: {},
+        tone: {}
+      },
+      totalInteractions: 0,
+      lastUpdated: Date.now()
+    };
+    
+    const analysis = analyzeUserInput(input);
+    const hour = new Date().getHours();
+    const timeCategory = getTimeCategory();
+    
+    // Track quickstart selections
+    if (isQuickstart) {
+      profile.quickstartUsage[input] = (profile.quickstartUsage[input] || 0) + 1;
+    } else {
+      // Track manual inputs
+      profile.manualInputs.push({
+        text: input,
+        timestamp: Date.now(),
+        timeCategory,
+        analysis
+      });
+      
+      // Keep only last 50 manual inputs for analysis
+      if (profile.manualInputs.length > 50) {
+        profile.manualInputs = profile.manualInputs.slice(-50);
+      }
+    }
+    
+    // Update preference weights
+    analysis.categories.forEach(category => {
+      profile.preferenceWeights.emotional[category] = (profile.preferenceWeights.emotional[category] || 0) + 1;
+    });
+    
+    analysis.themes.forEach(theme => {
+      profile.preferenceWeights.themes[theme] = (profile.preferenceWeights.themes[theme] || 0) + 1;
+    });
+    
+    profile.preferenceWeights.temporal[timeCategory] = (profile.preferenceWeights.temporal[timeCategory] || 0) + 1;
+    
+    // Determine tone based on sentiment and input characteristics
+    let tone = 'neutral';
+    if (analysis.sentiment === 'positive') {
+      tone = 'optimistic';
+    } else if (analysis.sentiment === 'negative') {
+      if (input.includes('grow') || input.includes('learn') || input.includes('better')) {
+        tone = 'growth-oriented';
+      } else {
+        tone = 'struggling';
+      }
+    } else if (input.includes('think') || input.includes('feel') || input.includes('reflect')) {
+      tone = 'reflective';
+    }
+    
+    profile.preferenceWeights.tone[tone] = (profile.preferenceWeights.tone[tone] || 0) + 1;
+    profile.totalInteractions += 1;
+    profile.lastUpdated = Date.now();
+    
+    await AsyncStorage.setItem(profileKey, JSON.stringify(profile));
+  } catch (error) {
+    console.log('Error updating user profile:', error);
+  }
+};
+
+// Get personalized quickstart suggestions based on learned preferences
+const getPersonalizedQuickstarts = async (): Promise<string[][]> => {
+  try {
+    const profileJson = await AsyncStorage.getItem('userLearningProfile');
+    const profile = profileJson ? JSON.parse(profileJson) : null;
+    
+    if (!profile || profile.totalInteractions < 3) {
+      // Not enough data, use smart defaults
+      return getSmartQuickstarts();
+    }
+    
+    const timeCategory = getTimeCategory();
+    const timePrompts = QUICKSTART_PROMPTS[timeCategory];
+    const universalPrompts = QUICKSTART_PROMPTS.universal;
+    const contextualPrompts = getContextualPrompts();
+    
+    // Get recent prompts to avoid repetition
     const recentPromptsJson = await AsyncStorage.getItem('recentQuickstarts');
     const recentPrompts: string[] = recentPromptsJson ? JSON.parse(recentPromptsJson) : [];
     
-    // Add new prompt to beginning, keep last 15
-    const updatedPrompts = [prompt, ...recentPrompts.filter(p => p !== prompt)].slice(0, 15);
+    // Score all available prompts based on user preferences
+    const allPrompts = [...timePrompts, ...universalPrompts, ...contextualPrompts];
+    const scoredPrompts = allPrompts.map(prompt => {
+      const analysis = analyzeUserInput(prompt);
+      let score = 1; // Base score
+      
+      // Weight based on emotional preferences
+      analysis.categories.forEach(category => {
+        const weight = profile.preferenceWeights.emotional[category] || 0;
+        score += weight * 0.3;
+      });
+      
+      // Weight based on theme preferences
+      analysis.themes.forEach(theme => {
+        const weight = profile.preferenceWeights.themes[theme] || 0;
+        score += weight * 0.25;
+      });
+      
+      // Weight based on time preferences
+      const timeWeight = profile.preferenceWeights.temporal[timeCategory] || 0;
+      score += timeWeight * 0.2;
+      
+      // Boost if similar to previously used quickstarts
+      const quickstartUsage = profile.quickstartUsage[prompt] || 0;
+      if (quickstartUsage > 0) {
+        score += quickstartUsage * 0.15;
+      }
+      
+      // Penalize if used recently
+      if (recentPrompts.includes(prompt)) {
+        score *= 0.3;
+      }
+      
+      // Boost prompts that match user's typical sentiment patterns
+      const userSentimentHistory = profile.manualInputs.map((input: any) => input.analysis.sentiment);
+      const positiveSentiments = userSentimentHistory.filter((s: string) => s === 'positive').length;
+      const negativeSentiments = userSentimentHistory.filter((s: string) => s === 'negative').length;
+      
+      if (positiveSentiments > negativeSentiments && analysis.sentiment === 'positive') {
+        score *= 1.2;
+      } else if (negativeSentiments > positiveSentiments && analysis.sentiment === 'negative') {
+        score *= 1.2;
+      }
+      
+      return { prompt, score };
+    });
     
+    // Sort by score and select top 6
+    const selectedPrompts = scoredPrompts
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(item => item.prompt);
+    
+    // Arrange in 3 rows of 2
+    return [
+      [selectedPrompts[0], selectedPrompts[1]],
+      [selectedPrompts[2], selectedPrompts[3]],
+      [selectedPrompts[4], selectedPrompts[5]]
+    ];
+    
+  } catch (error) {
+    console.log('Error getting personalized quickstarts:', error);
+    return getSmartQuickstarts();
+  }
+};
+
+// Enhanced tracking that includes learning
+const trackQuickstartUsage = async (prompt: string) => {
+  try {
+    // Update recent prompts for anti-repetition
+    const recentPromptsJson = await AsyncStorage.getItem('recentQuickstarts');
+    const recentPrompts: string[] = recentPromptsJson ? JSON.parse(recentPromptsJson) : [];
+    const updatedPrompts = [prompt, ...recentPrompts.filter(p => p !== prompt)].slice(0, 15);
     await AsyncStorage.setItem('recentQuickstarts', JSON.stringify(updatedPrompts));
+    
+    // Update user learning profile
+    await updateUserProfile(prompt, true);
   } catch (error) {
     console.log('Error tracking quickstart usage:', error);
   }
@@ -249,8 +499,24 @@ const HomeScreen = () => {
   ];
 
   useEffect(() => {
-    setQuickstartPrompts(quickstartOptions);
+    loadSmartQuickstarts();
   }, []);
+
+  const loadSmartQuickstarts = async () => {
+    try {
+      const personalizedPrompts = await getPersonalizedQuickstarts();
+      setQuickstartPrompts(personalizedPrompts);
+    } catch (error) {
+      console.log('Error loading personalized quickstarts:', error);
+      // Fallback to default prompts
+      setQuickstartPrompts(quickstartOptions);
+    }
+  };
+
+  const refreshQuickstarts = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await loadSmartQuickstarts();
+  };
 
   const handleFocus = () => {
     // Navigate to ActiveTextInputScreen instead of showing focused state
@@ -261,8 +527,10 @@ const HomeScreen = () => {
     // Remove the blur logic since we're navigating away
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (userInput.trim()) {
+      // Track manual user input for learning
+      await updateUserProfile(userInput.trim(), false);
       navigation.navigate('ArchetypeSelection', { userInput: userInput.trim() });
     }
   };
@@ -285,12 +553,6 @@ const HomeScreen = () => {
 
   const handleLogoPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const refreshQuickstarts = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Keep the same prompts as shown in the reference image
-    setQuickstartPrompts(quickstartOptions);
   };
 
   const logoTop = logoAnimation.interpolate({
@@ -374,7 +636,7 @@ const HomeScreen = () => {
               </View>
               
               <View style={styles.quickstartGrid}>
-                {quickstartPrompts[0]?.map((prompt, index) => (
+                {quickstartPrompts.flat().map((prompt, index) => (
                   <TouchableOpacity
                     key={index}
                     style={styles.quickstartPill}
@@ -449,7 +711,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'left',
-    flex: 1,
   },
   refreshButton: {
     marginLeft: 10,
