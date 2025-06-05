@@ -13,6 +13,7 @@ interface DailyUsageContextType {
   showBanner: boolean;
   bannerDismissed: boolean;
   dismissBanner: () => void;
+  resetBannerDismissal: () => void;
   getBannerConfig: () => BannerConfig;
 }
 
@@ -216,6 +217,10 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     showBanner,
     bannerDismissed,
     dismissBanner,
+    resetBannerDismissal: () => {
+      setBannerDismissed(false);
+      setLastDismissedLevel(null);
+    },
     getBannerConfig,
   };
 
