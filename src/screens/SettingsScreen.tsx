@@ -26,6 +26,7 @@ import { clearAllSavedSubliminals, getStorageInfo, forceMigration } from '../uti
 import { useAuth } from '../context/AuthContext';
 import subscriptionService from '../services/subscriptionService';
 import { DailyUsageDebug } from '../components/DailyUsageDebug';
+import { useDailyUsage } from '../context/DailyUsageContext';
 
 // TEMPORARY: Import this to check if we're in testing mode
 const FIREBASE_ENABLED = false;
@@ -112,6 +113,8 @@ const SettingsScreen = () => {
   // Subscription testing state (only when Firebase disabled)
   const [currentSubscriptionState, setCurrentSubscriptionState] = useState<'free' | 'premium'>('free');
   const [showDebugModal, setShowDebugModal] = useState(false);
+
+  const { resetDailyUsageForTesting } = useDailyUsage();
 
   useEffect(() => {
     loadStorageInfo();
@@ -412,6 +415,14 @@ const SettingsScreen = () => {
                   title="View Daily Usage Debug"
                   subtitle="See detailed usage tracking info"
                   onPress={() => setShowDebugModal(true)}
+                />
+                <SettingsItem
+                  title="Reset Daily Usage"
+                  subtitle="Reset to 0/3 for testing banner states"
+                  onPress={async () => {
+                    await resetDailyUsageForTesting();
+                    Alert.alert('✅ Reset Complete', 'Daily usage reset to 0/3. You can now test the banner behavior from the beginning.');
+                  }}
                 />
               </View>
             )}

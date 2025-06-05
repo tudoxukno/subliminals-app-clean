@@ -21,7 +21,7 @@ interface DailyLimitBannerProps {
 const { width: screenWidth } = Dimensions.get('window');
 
 export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePress }) => {
-  const { showBanner, dismissBanner, resetBannerDismissal, getBannerConfig, dailyUsage, dailyLimit, bannerDismissed } = useDailyUsage();
+  const { showBanner, dismissBanner, resetBannerDismissal, getBannerConfig, dailyUsage, dailyLimit, bannerDismissed, isLimitReached } = useDailyUsage();
   const bannerConfig = getBannerConfig();
   const insets = useSafeAreaInsets();
   
@@ -37,38 +37,60 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
   const statusBarHeight = Platform.OS === 'ios' ? insets.top : StatusBar.currentHeight || 0;
 
   useEffect(() => {
+    // Cleanup function to stop all animations and prevent conflicts
+    return () => {
+      slideAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+      sparkleAnim.stopAnimation();
+      indicatorOpacity.stopAnimation();
+      if (autoHideTimeoutRef.current) {
+        clearTimeout(autoHideTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (showBanner && !isVisible) {
       setIsVisible(true);
       setShowMinimalIndicator(false);
+      
+      // Stop any existing animations to prevent conflicts
+      slideAnim.stopAnimation();
+      indicatorOpacity.stopAnimation();
+      
+      // Reset animation values to ensure clean start and avoid driver conflicts
+      slideAnim.setValue(-120);
+      indicatorOpacity.setValue(0);
+      
       showSlideAnimation();
       startSparkleAnimation();
       // Hide minimal indicator when banner shows
       Animated.timing(indicatorOpacity, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
     } else if (!showBanner && isVisible) {
       hideSlideAnimation();
     }
     
-    // Show minimal indicator when banner is dismissed but user has some usage
-    if (bannerDismissed && dailyUsage > 0 && !showBanner) {
+    // Show minimal indicator when banner is dismissed but user has some usage (not at limit)
+    if (bannerDismissed && dailyUsage > 0 && !showBanner && !isLimitReached) {
       setShowMinimalIndicator(true);
       Animated.timing(indicatorOpacity, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
-    } else if (!bannerDismissed || showBanner) {
+    } else if (!bannerDismissed || showBanner || isLimitReached) {
       setShowMinimalIndicator(false);
       Animated.timing(indicatorOpacity, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
     }
-  }, [showBanner, isVisible, bannerDismissed, dailyUsage]);
+  }, [showBanner, isVisible, bannerDismissed, dailyUsage, isLimitReached]);
 
   // Sparkle animation for visual appeal
   const startSparkleAnimation = () => {
@@ -77,12 +99,12 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
         Animated.timing(sparkleAnim, {
           toValue: 1,
           duration: 2000,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(sparkleAnim, {
           toValue: 0,
           duration: 2000,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ])
     ).start();
@@ -96,12 +118,12 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
           Animated.timing(pulseAnim, {
             toValue: 1.02,
             duration: 1000,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
             duration: 1000,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
         ])
       ).start();
@@ -114,13 +136,16 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
       clearTimeout(autoHideTimeoutRef.current);
     }
 
+    const targetPosition = statusBarHeight + 8; // Back to original value
+
     // Slide down from behind status bar with bounce
     Animated.spring(slideAnim, {
-      toValue: statusBarHeight + 8,
+      toValue: targetPosition,
       tension: 100,
       friction: 8,
       useNativeDriver: false,
-    }).start();
+    }).start((finished) => {
+    });
 
     startPulseAnimation();
 
@@ -248,7 +273,6 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
           style={[
             styles.container,
             {
-              top: 0,
               transform: [
                 { translateY: slideAnim },
                 { scale: pulseAnim }
@@ -373,6 +397,7 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
+    top: 0,
     left: 16,
     right: 16,
     minHeight: 100,

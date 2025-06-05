@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import subscriptionService from '../services/subscriptionService';
 
@@ -15,6 +15,7 @@ interface DailyUsageContextType {
   dismissBanner: () => void;
   resetBannerDismissal: () => void;
   getBannerConfig: () => BannerConfig;
+  resetDailyUsageForTesting: () => Promise<void>;
 }
 
 interface BannerConfig {
@@ -191,10 +192,40 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const isLimitReached = dailyUsage >= dailyLimit;
   const canGenerate = !isLimitReached;
   
-  // Determine if banner should show - modified for testing
-  // Show banner for free users when: usage > 0 OR limit reached OR in first state (0 usage)
-  const showBanner = isSubscriptionLoaded && !isPremiumUser && 
-    (!bannerDismissed || isLimitReached);
+  // Determine if banner should show
+  const showBanner = useMemo(() => {
+    console.log('🏷️ BANNER LOGIC CHECK:', {
+      isPremiumUser,
+      isSubscriptionLoaded,
+      dailyUsage,
+      bannerDismissed,
+      isLimitReached,
+      bannerConfig: getBannerConfig()
+    });
+    
+    // Never show banner for premium users
+    if (isPremiumUser && isSubscriptionLoaded) {
+      console.log('🏷️ HIDING BANNER: Premium user');
+      return false;
+    }
+    
+    // Don't show banner if subscription state isn't loaded yet
+    if (!isSubscriptionLoaded) {
+      console.log('🏷️ HIDING BANNER: Subscription not loaded');
+      return false;
+    }
+    
+    // Show banner if limit reached, even if dismissed
+    if (isLimitReached) {
+      console.log('🏷️ SHOWING BANNER: Limit reached (overrides dismissal)');
+      return true;
+    }
+    
+    // Show banner if user has some usage and hasn't dismissed it
+    const shouldShow = dailyUsage > 0 && !bannerDismissed;
+    console.log('🏷️ BANNER DECISION:', { shouldShow, reason: shouldShow ? 'Has usage and not dismissed' : 'No usage or dismissed' });
+    return shouldShow;
+  }, [isPremiumUser, isSubscriptionLoaded, dailyUsage, bannerDismissed, isLimitReached]);
 
   console.log('🏷️ BANNER DEBUG:', {
     isSubscriptionLoaded,
@@ -205,6 +236,23 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     showBanner,
     bannerConfig: getBannerConfig()
   });
+
+  const resetDailyUsageForTesting = async (): Promise<void> => {
+    try {
+      // Clear today's usage data from AsyncStorage
+      const todayKey = getTodayKey();
+      await AsyncStorage.removeItem(`dailyUsage_${todayKey}`);
+      
+      // Reset all state
+      setDailyUsage(0);
+      setBannerDismissed(false);
+      setLastDismissedLevel(null);
+      
+      console.log('🧪 TESTING RESET: Daily usage cleared and reset to 0/3');
+    } catch (error) {
+      console.error('Error resetting daily usage for testing:', error);
+    }
+  };
 
   const value: DailyUsageContextType = {
     dailyUsage,
@@ -222,6 +270,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       setLastDismissedLevel(null);
     },
     getBannerConfig,
+    resetDailyUsageForTesting,
   };
 
   return (
