@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,30 @@ export const DailyUsageTicker: React.FC<DailyUsageTickerProps> = ({ onUpgradePre
   const heightAnim = useRef(new Animated.Value(40)).current;
   const contentOpacityAnim = useRef(new Animated.Value(0)).current;
   const tickerOpacityAnim = useRef(new Animated.Value(1)).current;
+  const iconPulseAnim = useRef(new Animated.Value(1)).current;
   
+  // Pulse animation for the expand icon
+  useEffect(() => {
+    if (!isExpanded) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(iconPulseAnim, {
+            toValue: 1.2,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(iconPulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+      return () => pulseAnimation.stop();
+    }
+  }, [isExpanded, iconPulseAnim]);
+
   const getUsageText = () => {
     return `${dailyUsage}/3`;
   };
@@ -129,9 +152,14 @@ export const DailyUsageTicker: React.FC<DailyUsageTickerProps> = ({ onUpgradePre
           onPress={expandTicker}
           activeOpacity={0.7}
         >
-          <Text style={styles.tickerText}>
-            {getUsageText()}
-          </Text>
+          <View style={styles.tickerRow}>
+            <Text style={styles.tickerText}>
+              {getUsageText()}
+            </Text>
+            <Animated.View style={[styles.expandIcon, { transform: [{ scale: iconPulseAnim }] }]}>
+              <Ionicons name="chevron-down" size={14} color="white" />
+            </Animated.View>
+          </View>
         </TouchableOpacity>
       </Animated.View>
 
@@ -203,10 +231,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  tickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   tickerText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  expandIcon: {
+    marginLeft: 4,
   },
   expandedContent: {
     position: 'absolute',
