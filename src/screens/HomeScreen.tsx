@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 import { BottomNav } from '../components/BottomNav';
 import TextInputField from '../components/TextInputField';
 import { DailyLimitBanner } from '../components/DailyLimitBanner';
+import { DailyUsageTicker } from '../components/DailyUsageTicker';
 import { useDailyUsage } from '../context/DailyUsageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -327,6 +328,9 @@ const HomeScreen = () => {
           
           {/* Daily Limit Banner - positioned at the top */}
           <DailyLimitBanner onUpgradePress={handleUpgradePress} />
+          
+          {/* Daily Usage Ticker - small counter in top-right */}
+          <DailyUsageTicker />
           
           {/* Main Content - Always show since we removed focused state */}
           <Animated.View style={[styles.mainContent, { opacity: contentAnimation }]}>

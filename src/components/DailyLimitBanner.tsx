@@ -24,161 +24,69 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
   const bannerConfig = getBannerConfig();
   const insets = useSafeAreaInsets();
   
-  console.log('🎪 BANNER COMPONENT DEBUG:', {
-    showBanner,
-    bannerConfig,
-    insets,
-    dailyUsage
-  });
-  
   const slideAnim = useRef(new Animated.Value(-100)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
   const [isVisible, setIsVisible] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const autoHideTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  // Handle visibility changes with proper timing
+  // Get current status bar height
+  const statusBarHeight = Platform.OS === 'ios' ? insets.top : StatusBar.currentHeight || 0;
+
   useEffect(() => {
     if (showBanner && !isVisible) {
-      // Show banner in full state
       setIsVisible(true);
-      setIsMinimized(false);
       showSlideAnimation();
-      
-      // Set up auto-minimize if configured
-      if (bannerConfig.autoHideDelay) {
-        autoHideTimeoutRef.current = setTimeout(() => {
-          minimizeBanner();
-        }, bannerConfig.autoHideDelay);
-      }
     } else if (!showBanner && isVisible) {
-      // Hide banner completely
       hideSlideAnimation();
     }
-
-    // Cleanup timeout on unmount or when showBanner changes
-    return () => {
-      if (autoHideTimeoutRef.current) {
-        clearTimeout(autoHideTimeoutRef.current);
-        autoHideTimeoutRef.current = undefined;
-      }
-    };
-  }, [showBanner]);
+  }, [showBanner, isVisible]);
 
   const showSlideAnimation = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: insets.top,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start();
-  };
+    // Clear any existing timeout
+    if (autoHideTimeoutRef.current) {
+      clearTimeout(autoHideTimeoutRef.current);
+    }
 
-  const minimizeBanner = () => {
-    // Animate to top-right corner as a small counter
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: insets.top,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0.4, // Scale down to 40%
-        duration: 250,
-        useNativeDriver: true,
-      })
-    ]).start((finished) => {
-      if (finished) {
-        setIsMinimized(true);
-        // Clear any pending auto-hide timeout
-        if (autoHideTimeoutRef.current) {
-          clearTimeout(autoHideTimeoutRef.current);
-          autoHideTimeoutRef.current = undefined;
-        }
-      }
-    });
-  };
+    // Slide down from behind status bar
+    Animated.timing(slideAnim, {
+      toValue: statusBarHeight,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
 
-  const expandBanner = () => {
-    setIsMinimized(false);
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: insets.top,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      })
-    ]).start();
-    
-    // Auto-minimize again after expansion
+    // Set auto-hide timeout if specified
     if (bannerConfig.autoHideDelay) {
       autoHideTimeoutRef.current = setTimeout(() => {
-        minimizeBanner();
+        dismissBanner();
       }, bannerConfig.autoHideDelay);
     }
   };
 
   const hideSlideAnimation = () => {
+    // Clear timeout if banner is manually dismissed
+    if (autoHideTimeoutRef.current) {
+      clearTimeout(autoHideTimeoutRef.current);
+      autoHideTimeoutRef.current = undefined;
+    }
+
     // Hide behind the status bar like native iOS notifications
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: -100,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      })
-    ]).start((finished) => {
+    Animated.timing(slideAnim, {
+      toValue: -100,
+      duration: 250,
+      useNativeDriver: false,
+    }).start((finished) => {
       if (finished) {
         setIsVisible(false);
-        setIsMinimized(false);
-        // Clear any pending auto-hide timeout
-        if (autoHideTimeoutRef.current) {
-          clearTimeout(autoHideTimeoutRef.current);
-          autoHideTimeoutRef.current = undefined;
-        }
       }
     });
   };
 
   const handleDismiss = () => {
-    // Clear auto-hide timeout since user manually dismissed
-    if (autoHideTimeoutRef.current) {
-      clearTimeout(autoHideTimeoutRef.current);
-      autoHideTimeoutRef.current = undefined;
-    }
-    
-    hideSlideAnimation();
-    // Use setTimeout to ensure animation completes before calling dismissBanner
-    setTimeout(() => {
-      dismissBanner();
-    }, 250);
+    dismissBanner();
   };
 
   const handleUpgrade = () => {
-    if (onUpgradePress) {
-      onUpgradePress();
-    }
-    handleDismiss();
+    onUpgradePress?.();
   };
-
-  // Don't render anything if not visible and not showing
-  if (!isVisible && !showBanner) {
-    return null;
-  }
 
   const getBannerStyle = () => {
     return {
@@ -191,57 +99,28 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
     return 'white';
   };
 
-  const getUsageText = () => {
-    const remaining = 3 - dailyUsage;
-    if (remaining <= 0) return '0/3 entries';
-    return `${remaining}/3 entries`;
-  };
-
-  if (isMinimized) {
-    // Minimized counter view
-    return (
-      <Animated.View
-        style={[
-          styles.minimizedContainer,
-          {
-            top: 0,
-            right: -45,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim }
-            ],
-            ...getBannerStyle(),
-          },
-        ]}
-      >
-        <TouchableOpacity onPress={expandBanner} style={styles.minimizedContent}>
-          <Text style={[styles.counterText, { color: getTextColor() }]}>
-            {getUsageText()}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
+  // Don't render anything if banner should not be visible
+  if (!isVisible) {
+    return null;
   }
 
-  // Full banner view
   return (
     <Animated.View
       style={[
         styles.container,
         {
           top: 0,
-          transform: [
-            { translateY: slideAnim },
-            { scale: scaleAnim }
-          ],
+          transform: [{ translateY: slideAnim }],
           ...getBannerStyle(),
         },
       ]}
     >
       <View style={styles.content}>
-        <Text style={[styles.message, { color: getTextColor() }]}>
-          {bannerConfig.message}
-        </Text>
+        <View style={styles.textContainer}>
+          <Text style={[styles.message, { color: getTextColor() }]}>
+            {bannerConfig.message}
+          </Text>
+        </View>
         
         <View style={styles.actions}>
           {bannerConfig.showUpgrade && (
@@ -254,10 +133,6 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
               </Text>
             </TouchableOpacity>
           )}
-          
-          <TouchableOpacity style={styles.minimizeButton} onPress={minimizeBanner}>
-            <Ionicons name="remove" size={18} color={getTextColor()} />
-          </TouchableOpacity>
           
           <TouchableOpacity style={styles.closeButton} onPress={handleDismiss}>
             <Ionicons name="close" size={18} color={getTextColor()} />
@@ -274,24 +149,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     height: 64,
-    borderRadius: 8,
-    borderWidth: 1,
-    zIndex: 1000,
-    elevation: 1000,
-    // Add subtle shadow to match app design
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  minimizedContainer: {
-    position: 'absolute',
-    width: 220,
-    height: 80,
-    borderRadius: 40,
+    borderRadius: 16,
     borderWidth: 1,
     zIndex: 1000,
     elevation: 1000,
@@ -302,15 +160,6 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-  },
-  minimizedContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  counterText: {
-    fontSize: 32,
-    fontWeight: '600',
   },
   content: {
     flex: 1,
@@ -319,10 +168,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
   },
+  textContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
   message: {
     fontSize: 14,
     fontWeight: '500',
-    flex: 1,
   },
   actions: {
     flexDirection: 'row',
@@ -330,24 +182,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   upgradeButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   upgradeText: {
     fontSize: 12,
     fontWeight: '600',
   },
-  minimizeButton: {
-    padding: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
   closeButton: {
     padding: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 }); 
