@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   expandIcon: {
-    marginLeft: 4,
+    marginLeft: 8,
   },
   expandedContent: {
     position: 'absolute',
