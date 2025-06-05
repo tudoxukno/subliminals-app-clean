@@ -110,5 +110,12 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 
+# Google Service configuration files (contains API keys)
+**/GoogleService-Info.plist
+ios/GoogleService-Info.plist
+ios/**/GoogleService-Info.plist
+google-services.json
+app/google-services.json
+
 # Cache
 *.cache
