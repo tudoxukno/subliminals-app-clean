@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   contrastLine: {
     position: 'absolute',
-    top: -8,
+    top: 0,
     left: 0,
     right: 0,
     height: 2,

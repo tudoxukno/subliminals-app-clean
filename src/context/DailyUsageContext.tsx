@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import subscriptionService from '../services/subscriptionService';
+import { useSubscription } from './SubscriptionContext';
 
 interface DailyUsageContextType {
   dailyUsage: number;
@@ -38,25 +38,24 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const [dailyLimit] = useState(3); // From FREEMIUM_CONFIG
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lastDismissedLevel, setLastDismissedLevel] = useState<string | null>(null);
-  const [isSubscriptionLoaded, setIsSubscriptionLoaded] = useState(false);
-  const [isPremiumUser, setIsPremiumUser] = useState(false);
+  
+  // Get subscription info from context with error handling
+  let subscriptionData;
+  try {
+    subscriptionData = useSubscription();
+  } catch (error) {
+    console.error('DailyUsageProvider: SubscriptionProvider not found, using defaults');
+    subscriptionData = {
+      isPremiumUser: false,
+      isSubscriptionLoaded: false,
+      subscriptionInfo: { isActive: false, tier: 'free' as const, willRenew: false }
+    };
+  }
+  const { isPremiumUser, isSubscriptionLoaded, subscriptionInfo } = subscriptionData;
 
   useEffect(() => {
     loadDailyUsage();
-    checkSubscriptionStatus();
   }, []);
-
-  const checkSubscriptionStatus = async (): Promise<void> => {
-    try {
-      const subscription = await subscriptionService.getCurrentSubscription();
-      setIsPremiumUser(subscription.isActive && subscription.tier !== 'free');
-      setIsSubscriptionLoaded(true);
-    } catch (error) {
-      console.error('Error checking subscription status:', error);
-      setIsPremiumUser(false);
-      setIsSubscriptionLoaded(true);
-    }
-  };
 
   const getTodayKey = (): string => {
     return new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -98,16 +97,14 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const incrementUsage = async (): Promise<void> => {
-    const subscription = await subscriptionService.getCurrentSubscription();
-    
     console.log('📊 INCREMENT USAGE DEBUG:', {
       currentUsage: dailyUsage,
-      subscription: subscription,
-      willIncrement: subscription.tier === 'free' && !subscription.isActive
+      subscriptionInfo: subscriptionInfo,
+      willIncrement: subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive
     });
     
     // Only increment for free users
-    if (subscription.tier === 'free' && !subscription.isActive) {
+    if (subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive) {
       const newCount = dailyUsage + 1;
       setDailyUsage(newCount);
       await saveDailyUsage(newCount);

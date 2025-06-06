@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import firebaseService, { UserProfile } from '../services/firebase';
 import hybridStorage from '../utils/hybridStorage';
-
-// TEMPORARY: Disable Firebase for testing
-const FIREBASE_ENABLED = false;
+import { getEnvironmentInfo, logEnvironmentInfo } from '../utils/environmentDetection';
 
 // Conditional type imports
 let FirebaseAuthTypes: any = null;
-if (FIREBASE_ENABLED) {
+const env = getEnvironmentInfo();
+if (env.canUseFirebase) {
   FirebaseAuthTypes = require('@react-native-firebase/auth').FirebaseAuthTypes;
 }
 
@@ -42,15 +41,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const env = getEnvironmentInfo();
 
   // Determine authentication status
   // When Firebase is disabled, we start unauthenticated to test the auth UX
   // When Firebase is enabled, we require a non-anonymous user for full features
-  const isAuthenticated = FIREBASE_ENABLED ? (user && !user.isAnonymous) : (user !== null);
-  const isAnonymous = FIREBASE_ENABLED ? (user?.isAnonymous ?? true) : false;
+  const isAuthenticated = env.canUseFirebase ? (user && !user.isAnonymous) : (user !== null);
+  const isAnonymous = env.canUseFirebase ? (user?.isAnonymous ?? true) : false;
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED) {
+    // Log environment info on startup
+    logEnvironmentInfo();
+    
+    if (!env.canUseFirebase) {
       // Start unauthenticated for testing the auth UX
       setUser(null);
       setUserProfile(null);
@@ -78,7 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signInAnonymously = async () => {
-    if (!FIREBASE_ENABLED) {
+    if (!env.canUseFirebase) {
       // For local storage, we don't need anonymous sign-in
       return;
     }
@@ -95,7 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    if (!FIREBASE_ENABLED) {
+    if (!env.canUseFirebase) {
       // Simulate successful signup for local storage
       setUser({ uid: 'local-user', email, isAnonymous: false });
       return;
@@ -113,7 +117,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    if (!FIREBASE_ENABLED) {
+    if (!env.canUseFirebase) {
       // Simulate successful signin for local storage
       setUser({ uid: 'local-user', email, isAnonymous: false });
       return;
@@ -131,7 +135,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const linkAnonymousAccount = async (email: string, password: string) => {
-    if (!FIREBASE_ENABLED) {
+    if (!env.canUseFirebase) {
       // Simulate successful account linking for local storage
       setUser({ uid: 'local-user', email, isAnonymous: false });
       return;
@@ -149,7 +153,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signOut = async () => {
-    if (!FIREBASE_ENABLED) {
+    if (!env.canUseFirebase) {
       // For local storage, reset user state and optionally clear saved data
       setUser(null);
       setUserProfile(null);
@@ -175,7 +179,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     storageType: 'local' | 'cloud' | 'hybrid';
     lastSync?: string;
   }> => {
-    if (!FIREBASE_ENABLED) {
+    if (!env.canUseFirebase) {
       const savedSubliminals = await hybridStorage.getSavedSubliminals();
       return {
         totalSaved: savedSubliminals.length,
