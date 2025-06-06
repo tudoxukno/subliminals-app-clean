@@ -10,21 +10,28 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0A0A0A"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jaylon.subliminals",
-      "googleServicesFile": "./ios/GoogleService-Info.plist"
+      "googleServicesFile": "./ios/GoogleService-Info.plist",
+      "icon": "./assets/icon.png"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      "expo-dev-client"
     ],
     "android": {
-      "package": "com.jaylon.subliminals"
+      "package": "com.jaylon.subliminals",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0A0A0A"
+      }
     }
   }
 }
