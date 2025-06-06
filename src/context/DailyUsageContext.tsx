@@ -215,17 +215,17 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       return false;
     }
     
-    // Show banner if limit reached, even if dismissed
-    if (isLimitReached) {
-      console.log('🏷️ SHOWING BANNER: Limit reached (overrides dismissal)');
-      return true;
+    // Allow dismissal even when limit is reached - check if banner was dismissed for current level
+    if (bannerDismissed && lastDismissedLevel === getBannerConfig().level) {
+      console.log('🏷️ HIDING BANNER: Banner dismissed for current level');
+      return false;
     }
     
-    // Show banner if user has some usage and hasn't dismissed it
-    const shouldShow = dailyUsage > 0 && !bannerDismissed;
-    console.log('🏷️ BANNER DECISION:', { shouldShow, reason: shouldShow ? 'Has usage and not dismissed' : 'No usage or dismissed' });
+    // Show banner if user has some usage and hasn't dismissed it for current level
+    const shouldShow = dailyUsage > 0;
+    console.log('🏷️ BANNER DECISION:', { shouldShow, reason: shouldShow ? 'Has usage and not dismissed for level' : 'No usage' });
     return shouldShow;
-  }, [isPremiumUser, isSubscriptionLoaded, dailyUsage, bannerDismissed, isLimitReached]);
+  }, [isPremiumUser, isSubscriptionLoaded, dailyUsage, bannerDismissed, isLimitReached, lastDismissedLevel]);
 
   console.log('🏷️ BANNER DEBUG:', {
     isSubscriptionLoaded,

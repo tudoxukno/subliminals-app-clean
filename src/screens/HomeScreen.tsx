@@ -125,12 +125,15 @@ const getTimeCategory = (): keyof typeof QUICKSTART_PROMPTS => {
   return 'lateNight';
 };
 
-// Smart prompt selection with anti-repetition
+// Smart prompt selection with improved anti-repetition
 const getSmartQuickstarts = async (): Promise<string[][]> => {
   try {
+    console.log('🎯 Starting smart quickstarts generation...');
+    
     // Get recent prompts to avoid repetition
     const recentPromptsJson = await AsyncStorage.getItem('recentQuickstarts');
     const recentPrompts: string[] = recentPromptsJson ? JSON.parse(recentPromptsJson) : [];
+    console.log('📚 Recent prompts count:', recentPrompts.length);
     
     // Get time-based category
     const timeCategory = getTimeCategory();
@@ -142,27 +145,95 @@ const getSmartQuickstarts = async (): Promise<string[][]> => {
     
     // Combine all available prompts
     const allAvailablePrompts = [...timePrompts, ...universalPrompts, ...contextualPrompts];
+    console.log('🔢 Total available prompts:', allAvailablePrompts.length);
     
-    // Filter out recently used prompts (last 10)
+    // Filter out recently used prompts (last 15 instead of 10 for better variety)
     const availablePrompts = allAvailablePrompts.filter(
       prompt => !recentPrompts.includes(prompt)
     );
+    console.log('🆕 Available prompts after filtering recent:', availablePrompts.length);
     
-    // If we've used too many prompts, reset and use all
-    const promptsToUse = availablePrompts.length >= 6 ? availablePrompts : allAvailablePrompts;
+    // If we've used too many prompts, keep only the last 8 recent ones and use the rest
+    let promptsToUse: string[];
+    if (availablePrompts.length >= 6) {
+      promptsToUse = availablePrompts;
+      console.log('✅ Using filtered prompts');
+    } else {
+      // Reset recent list but keep the last 8 to still avoid immediate repetition
+      const reducedRecent = recentPrompts.slice(0, 8);
+      promptsToUse = allAvailablePrompts.filter(
+        prompt => !reducedRecent.includes(prompt)
+      );
+      
+      // If still not enough, use all prompts
+      if (promptsToUse.length < 6) {
+        promptsToUse = allAvailablePrompts;
+        console.log('🔄 Using all prompts (not enough unique ones)');
+      } else {
+        console.log('🔄 Reset recent list, using reduced filter');
+      }
+      
+      // Update recent prompts list to the reduced set
+      await AsyncStorage.setItem('recentQuickstarts', JSON.stringify(reducedRecent));
+    }
     
-    // Shuffle and select 6 prompts
-    const shuffled = promptsToUse.sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 6);
+    console.log('🎲 Prompts to use count:', promptsToUse.length);
+    
+    // Enhanced shuffling with Fisher-Yates algorithm for better randomness
+    const shuffled = [...promptsToUse];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Select 6 prompts ensuring good variety
+    const selected: string[] = [];
+    const usedCategories = new Set<string>();
+    
+    // First pass: try to get variety across emotional categories
+    for (const prompt of shuffled) {
+      if (selected.length >= 6) break;
+      
+      const analysis = analyzeUserInput(prompt);
+      const hasNewCategory = analysis.categories.some(cat => !usedCategories.has(cat));
+      
+      if (hasNewCategory || selected.length < 3) {
+        selected.push(prompt);
+        analysis.categories.forEach(cat => usedCategories.add(cat));
+      }
+    }
+    
+    // Second pass: fill remaining slots if needed
+    for (const prompt of shuffled) {
+      if (selected.length >= 6) break;
+      if (!selected.includes(prompt)) {
+        selected.push(prompt);
+      }
+    }
+    
+    // Ensure we have exactly 6 prompts
+    while (selected.length < 6 && shuffled.length > 0) {
+      const randomIndex = Math.floor(Math.random() * shuffled.length);
+      const prompt = shuffled[randomIndex];
+      if (!selected.includes(prompt)) {
+        selected.push(prompt);
+      }
+      shuffled.splice(randomIndex, 1);
+    }
+    
+    console.log('🎯 Final selected prompts:', selected);
     
     // Arrange in 3 rows of 2
-    return [
+    const result = [
       [selected[0], selected[1]],
       [selected[2], selected[3]],
       [selected[4], selected[5]]
     ];
+    
+    console.log('✅ Smart quickstarts generation completed');
+    return result;
   } catch (error) {
-    console.log('Error getting smart quickstarts:', error);
+    console.log('❌ Error getting smart quickstarts:', error);
     // Fallback to default prompts
     return [
       ["I can't stop replaying it.", "I feel invisible."],
@@ -455,16 +526,22 @@ const getPersonalizedQuickstarts = async (): Promise<string[][]> => {
 // Enhanced tracking that includes learning
 const trackQuickstartUsage = async (prompt: string) => {
   try {
+    console.log('📝 Tracking quickstart usage:', prompt);
+    
     // Update recent prompts for anti-repetition
     const recentPromptsJson = await AsyncStorage.getItem('recentQuickstarts');
     const recentPrompts: string[] = recentPromptsJson ? JSON.parse(recentPromptsJson) : [];
     const updatedPrompts = [prompt, ...recentPrompts.filter(p => p !== prompt)].slice(0, 15);
     await AsyncStorage.setItem('recentQuickstarts', JSON.stringify(updatedPrompts));
     
+    console.log('📚 Updated recent prompts list. New count:', updatedPrompts.length);
+    
     // Update user learning profile
     await updateUserProfile(prompt, true);
+    
+    console.log('✅ Quickstart usage tracking completed');
   } catch (error) {
-    console.log('Error tracking quickstart usage:', error);
+    console.log('❌ Error tracking quickstart usage:', error);
   }
 };
 
@@ -503,18 +580,22 @@ const HomeScreen = () => {
 
   const loadSmartQuickstarts = async () => {
     try {
-      const personalizedPrompts = await getPersonalizedQuickstarts();
-      setQuickstartPrompts(personalizedPrompts);
+      console.log('🔄 Loading quickstarts...');
+      const smartPrompts = await getSmartQuickstarts();
+      console.log('✅ New quickstarts loaded:', smartPrompts.flat());
+      setQuickstartPrompts(smartPrompts);
     } catch (error) {
-      console.log('Error loading personalized quickstarts:', error);
+      console.log('❌ Error loading smart quickstarts:', error);
       // Fallback to default prompts
       setQuickstartPrompts(quickstartOptions);
     }
   };
 
   const refreshQuickstarts = async () => {
+    console.log('🔄 Refresh button pressed');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await loadSmartQuickstarts();
+    console.log('✅ Quickstarts refresh completed');
   };
 
   const handleFocus = () => {
@@ -536,7 +617,7 @@ const HomeScreen = () => {
 
   const handleQuickstartPress = (prompt: string) => {
     trackQuickstartUsage(prompt);
-    navigation.navigate('ArchetypeSelection', { userInput: prompt });
+    navigation.navigate('ActiveTextInput', { initialText: prompt });
   };
 
   const dismissKeyboard = () => {

@@ -74,15 +74,17 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
       hideSlideAnimation();
     }
     
-    // Show minimal indicator when banner is dismissed but user has some usage (not at limit)
-    if (bannerDismissed && dailyUsage > 0 && !showBanner && !isLimitReached) {
+    // Show minimal indicator when banner is dismissed but user has some usage
+    if (bannerDismissed && dailyUsage > 0 && !showBanner) {
+      console.log('🔹 SHOWING minimal indicator:', { bannerDismissed, dailyUsage, showBanner, isLimitReached });
       setShowMinimalIndicator(true);
       Animated.timing(indicatorOpacity, {
         toValue: 1,
         duration: 300,
         useNativeDriver: false,
       }).start();
-    } else if (!bannerDismissed || showBanner || isLimitReached) {
+    } else if (!bannerDismissed || showBanner) {
+      console.log('🔸 HIDING minimal indicator:', { bannerDismissed, dailyUsage, showBanner, isLimitReached });
       setShowMinimalIndicator(false);
       Animated.timing(indicatorOpacity, {
         toValue: 0,
@@ -202,7 +204,7 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
         subtitle: 'Daily limit reached • Upgrade for unlimited access',
         actionText: 'Upgrade Now',
         actionStyle: 'primary' as const,
-        showClose: false,
+        showClose: true,
         accentColor: '#FF4757',
       };
     } else if (bannerConfig.level === 'medium') {
@@ -305,21 +307,6 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
               <Text style={styles.sparkleText}>✨</Text>
             </Animated.View>
             
-            <Animated.View
-              style={[
-                styles.sparkle,
-                styles.sparkle2,
-                {
-                  opacity: sparkleAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 0],
-                  }),
-                }
-              ]}
-            >
-              <Text style={styles.sparkleText}>⭐</Text>
-            </Animated.View>
-
             <View style={styles.content}>
               {/* Left Side - Icon and Text */}
               <View style={styles.leftContent}>
@@ -357,7 +344,7 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
                       {design.actionText}
                     </Text>
                     {design.actionStyle === 'primary' && (
-                      <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                      <Ionicons name="arrow-forward" size={16} color="#333" />
                     )}
                   </TouchableOpacity>
                 )}
@@ -474,7 +461,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
+    minWidth: 120,
   },
   primaryButton: {
     backgroundColor: '#FFF',
@@ -540,10 +529,6 @@ const styles = StyleSheet.create({
   sparkle1: {
     top: 12,
     right: 60,
-  },
-  sparkle2: {
-    bottom: 16,
-    left: 70,
   },
   sparkleText: {
     fontSize: 12,
