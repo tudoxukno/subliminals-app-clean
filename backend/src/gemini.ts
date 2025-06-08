@@ -408,33 +408,73 @@ function createHuggingFaceImagePrompt(userInput: string, archetypeName: string):
   // Extract emotions for visual styling
   const emotions = extractEmotionalKeywords(userInput.toLowerCase());
   
-  // Optimized prompts for Hugging Face diffusion models
-  const archetypeStyles = {
-    'Mirror': 'minimalist abstract background, soft reflections, glass textures, calming blues and whites',
-    'Therapist': 'peaceful nature scene, soft natural lighting, healing atmosphere, warm earth tones',
-    'Realist': 'clean modern background, geometric patterns, grounded aesthetic, muted professional colors',
-    'Poet': 'artistic abstract composition, flowing organic shapes, dreamy ethereal lighting, soft pastels',
-    'Best Friend': 'warm cozy atmosphere, bright cheerful colors, friendly inviting space, golden lighting'
+  // Use the same diverse style variations as Vertex AI for consistency
+  const archetypeStyleVariations = {
+    'Mirror': [
+      'minimalist zen space, clean contemplative design, glass and crystal elements',
+      'abstract geometric background, crystalline patterns, pure light reflections',
+      'serene architectural space, natural transparency, depth and clarity',
+      'ethereal mist atmosphere, soft revealing light, peaceful meditation vibes',
+      'sacred geometry patterns, mandala influence, spiritual symmetry design',
+      'modern sanctuary space, clean lines, truth and clarity aesthetic'
+    ],
+    'Therapist': [
+      'healing sanctuary background, warm therapeutic atmosphere, comfort design',
+      'lush botanical environment, natural greenery, growth and renewal vibes',
+      'cozy textile textures, soft blanket aesthetic, therapeutic comfort',
+      'golden meadow setting, peaceful natural calm, restorative energy',
+      'warm candlelit atmosphere, gentle healing space, soft shadows',
+      'flowing water feature, natural pool aesthetic, cleansing themes'
+    ],
+    'Realist': [
+      'industrial design background, concrete steel aesthetic, solid foundation',
+      'workshop tool environment, practical functionality, grounded workspace',
+      'architectural blueprint style, clean construction aesthetic, building themes',
+      'mountain rock formation, geological strength, enduring stability',
+      'minimalist office space, clean productivity environment, focused achievement',
+      'urban infrastructure design, bridge road aesthetic, practical connection'
+    ],
+    'Poet': [
+      'abstract paint flow background, artistic color bleeding, creative expression',
+      'celestial night sky, cosmic wonder atmosphere, infinite possibility',
+      'vintage library aesthetic, aged paper texture, timeless wisdom',
+      'flowing silk fabric, ethereal movement, artistic grace design',
+      'autumn forest path, seasonal transformation, natural poetry',
+      'watercolor wash effect, artistic color bleeding, creative inspiration'
+    ],
+    'Best Friend': [
+      'cozy coffee shop background, warm gathering space, friendship vibes',
+      'sunny picnic aesthetic, bright outdoor joy, celebratory energy',
+      'vintage polaroid style, nostalgic warmth, memory making atmosphere',
+      'festival party background, vibrant celebration, joyful gathering',
+      'sunset beach vibes, golden friendship moment, supportive connection',
+      'bookstore cafe combination, intellectual comfort, thoughtful friendship'
+    ]
   };
 
-  // Emotion-based modifications
+  // Emotion-based modifications optimized for diffusion models
   const emotionModifiers = {
-    sad: 'gentle, soothing, soft blues and grays',
-    happy: 'bright, uplifting, warm golden tones',
-    anxious: 'calming, peaceful, soft greens and blues', 
-    angry: 'dramatic but beautiful, warm oranges and reds',
-    creative: 'artistic, colorful, inspiring energy',
-    tired: 'restful, cozy, soft muted tones'
+    sad: 'gentle soothing tones, soft blues grays, calming atmosphere',
+    happy: 'bright uplifting energy, warm golden lighting, vibrant positivity',
+    anxious: 'peaceful calming greens, serene nature, grounding elements', 
+    angry: 'dramatic warm colors, passionate oranges reds, powerful energy',
+    creative: 'artistic color splashes, inspiring innovation, creative vibes',
+    tired: 'restful muted tones, cozy comfort, peaceful restoration',
+    love: 'warm rose coral tones, heart opening softness, loving energy',
+    growth: 'fresh green elements, expanding light, transformative themes'
   };
 
-  let prompt = archetypeStyles[archetypeName as keyof typeof archetypeStyles] || archetypeStyles['Mirror'];
+  // Get style variations and randomly select one
+  const styleOptions = archetypeStyleVariations[archetypeName as keyof typeof archetypeStyleVariations] || archetypeStyleVariations['Mirror'];
+  const randomStyleIndex = Math.floor(Math.random() * styleOptions.length);
+  let prompt = styleOptions[randomStyleIndex];
   
   // Add emotion-based styling
   if (emotions.length > 0) {
     const primaryEmotion = emotions[0];
     const modifier = emotionModifiers[primaryEmotion as keyof typeof emotionModifiers];
     if (modifier) {
-      prompt += `, ${modifier}`;
+      prompt += `, enhanced with ${modifier}`;
     }
   }
 
@@ -448,38 +488,80 @@ function createImagePrompt(userInput: string, archetypeName: string): string {
   // Extract emotions and themes from user input
   const emotions = extractEmotionalKeywords(userInput.toLowerCase());
   
-  // Base archetype aesthetics
-  const archetypeAesthetics = {
-    'Mirror': 'reflective, mirror-like surfaces, light refraction, serene spaces, clarity',
-    'Therapist': 'calming nature scenes, soft lighting, peaceful environments, healing spaces',
-    'Realist': 'grounded landscapes, solid structures, practical tools, earth tones',
-    'Poet': 'artistic, flowing forms, natural beauty, dreamlike quality, ethereal lighting',
-    'Best Friend': 'warm, cozy spaces, bright colors, celebratory atmosphere, joyful energy'
+  // Multiple diverse style variations for each archetype - rotate randomly to avoid repetition
+  const archetypeStyleVariations = {
+    'Mirror': [
+      'deep introspective spaces, contemplative lighting, depth and dimension, truth and clarity themes',
+      'serene architectural spaces, clean lines, natural light, transparency and openness',
+      'abstract geometric patterns, crystalline structures, pure light reflections, minimalist clarity',
+      'zen garden aesthetics, stone and water elements, peaceful contemplation spaces',
+      'ethereal mist and fog, soft revealing light, layers of depth, quiet revelation themes',
+      'sacred geometry patterns, mandala influences, spiritual symmetry, inner wisdom imagery'
+    ],
+    'Therapist': [
+      'healing sanctuary spaces, warm therapeutic lighting, comfort and safety themes',
+      'natural botanical environments, lush greenery, growth and renewal imagery',
+      'soft textile textures, blanket fort aesthetics, cozy therapeutic comfort',
+      'golden hour meadows, peaceful natural settings, restorative calm energy',
+      'warm candlelit atmospheres, intimate healing spaces, gentle shadows',
+      'flowing water features, natural pools, cleansing and renewal themes'
+    ],
+    'Realist': [
+      'industrial strength imagery, concrete and steel, solid foundation themes',
+      'workshop and tool aesthetics, practical functionality, grounded workspaces',
+      'architectural blueprints style, clean construction, building and creating themes',
+      'mountain and rock formations, geological stability, enduring strength imagery',
+      'minimalist office spaces, clean productivity, focused achievement environments',
+      'urban infrastructure, bridges and roads, practical connection themes'
+    ],
+    'Poet': [
+      'abstract expressionist paint flows, artistic color bleeding, creative energy',
+      'celestial night skies, cosmic wonder, infinite possibility themes',
+      'vintage library aesthetics, aged paper textures, timeless wisdom imagery',
+      'flowing fabric and silk, ethereal movement, artistic grace themes',
+      'autumn forest paths, seasonal transformation, natural poetry themes',
+      'watercolor wash effects, artistic bleeding colors, creative expression imagery'
+    ],
+    'Best Friend': [
+      'cozy coffee shop vibes, warm gathering spaces, friendship and connection themes',
+      'sunny picnic aesthetics, bright outdoor joy, celebratory friendship energy',
+      'vintage polaroid photo style, nostalgic warmth, memory-making themes',
+      'festival and party atmospheres, vibrant celebrations, joyful gathering energy',
+      'warm sunset beach vibes, golden friendship moments, supportive connection themes',
+      'bookstore and cafe combinations, intellectual comfort, thoughtful friendship spaces'
+    ]
   };
 
-  // Emotion-based visual elements
-  const emotionVisuals = {
-    sad: 'soft rain, gentle mist, muted colors, calm water reflections',
-    happy: 'bright sunlight, golden hour, vibrant colors, uplifting energy',
-    anxious: 'peaceful forest, calming blues and greens, serene nature',
-    angry: 'dramatic sunset, warm oranges and reds, powerful but beautiful',
-    creative: 'artistic swirls, colorful paint strokes, creative energy',
-    tired: 'restful scenes, soft pillows, cozy blankets, peaceful rest'
+  // Emotion-based visual modifiers that work with any style
+  const emotionModifiers = {
+    sad: 'gentle soft tones, comforting blues and grays, soothing atmosphere',
+    happy: 'bright warm lighting, uplifting golden tones, energizing vibrancy',
+    anxious: 'calming green influences, peaceful serenity, grounding elements',
+    angry: 'dynamic warm colors, passionate oranges and reds, powerful energy',
+    creative: 'artistic color splashes, inspiring creative energy, innovative vibes',
+    tired: 'restful muted tones, cozy comfort elements, peaceful restoration',
+    love: 'warm rose and coral tones, heart-opening softness, loving energy',
+    growth: 'fresh green elements, expanding light, transformative themes',
+    strength: 'bold architectural elements, powerful stability, confidence imagery'
   };
+
+  // Get style variations for the archetype
+  const styleOptions = archetypeStyleVariations[archetypeName as keyof typeof archetypeStyleVariations] || archetypeStyleVariations['Mirror'];
+  
+  // Randomly select a style variation to prevent repetition
+  const randomStyleIndex = Math.floor(Math.random() * styleOptions.length);
+  const selectedStyle = styleOptions[randomStyleIndex];
 
   // Build the prompt
   let prompt = 'A beautiful, aesthetic background image featuring ';
-  
-  // Add archetype-specific elements
-  const aesthetic = archetypeAesthetics[archetypeName as keyof typeof archetypeAesthetics] || archetypeAesthetics['Mirror'];
-  prompt += aesthetic;
+  prompt += selectedStyle;
 
-  // Add emotion-based elements
+  // Add emotion-based modifications
   if (emotions.length > 0) {
     const primaryEmotion = emotions[0];
-    const visual = emotionVisuals[primaryEmotion as keyof typeof emotionVisuals];
-    if (visual) {
-      prompt += `, ${visual}`;
+    const modifier = emotionModifiers[primaryEmotion as keyof typeof emotionModifiers];
+    if (modifier) {
+      prompt += `, enhanced with ${modifier}`;
     }
   }
 
@@ -487,7 +569,7 @@ function createImagePrompt(userInput: string, archetypeName: string): string {
   prompt += ', high quality, artistic, beautiful lighting, professional photography style, instagram aesthetic, dreamy atmosphere';
 
   // Keep it family-friendly and abstract
-  prompt += ', abstract, no people, no text, suitable for background use';
+  prompt += ', abstract background, no people, no text, suitable for mobile app background use';
 
   return prompt;
 }
