@@ -171,6 +171,7 @@ const ArchetypeSelectionScreen = () => {
   const [showUserInputModal, setShowUserInputModal] = useState(false);
   const [backgroundsLoading, setBackgroundsLoading] = useState<{[key: string]: boolean}>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [hasIncrementedUsage, setHasIncrementedUsage] = useState(false);
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 2): { truncated: string; needsTruncation: boolean } => {
@@ -252,9 +253,14 @@ const ArchetypeSelectionScreen = () => {
 
         const results = await Promise.all(promises);
         
-        // Track usage after successful generation
-        await incrementUsage();
-        console.log('📊 Daily usage incremented after generation');
+        // Track usage after successful generation (only on first visit to this entry)
+        if (!hasIncrementedUsage && !selectedArchetypeInSession) {
+          await incrementUsage();
+          setHasIncrementedUsage(true);
+          console.log('📊 Daily usage incremented after generation (first visit)');
+        } else {
+          console.log('📊 Skipping usage increment (returning to selection or already incremented)');
+        }
 
         // Process responses
         const newResponses: {[key: string]: ArchetypeData} = {};
