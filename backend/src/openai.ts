@@ -541,35 +541,38 @@ export const regenerateBackground = async (
     };
   }
   
-  // Try DALL-E first
-  let backgroundImage = await generateCustomBackground(archetype, userInput, response, quote, nextStyleIndex);
+  // Check if OpenAI is available and image generation is not disabled
+  let backgroundImage: string | null = null;
   
-  // If DALL-E failed (null result), try Gemini image generation
+  if (openai && !imageGenerationDisabled) {
+    console.log('🎨 Trying DALL-E for background regeneration...');
+    backgroundImage = await generateCustomBackground(archetype, userInput, response, quote, nextStyleIndex);
+  } else {
+    console.log('🎨 OpenAI disabled or not available, using Gemini for regeneration...');
+  }
+  
+  // If DALL-E failed or unavailable, try Gemini image generation
   if (!backgroundImage) {
-    console.log('🔄 DALL-E failed, trying Gemini image generation...');
+    console.log('🔄 Using Gemini image generation for regenerate...');
     try {
       const { generateImageWithGemini } = await import('./gemini');
       const geminiResult = await generateImageWithGemini(userInput, archetype);
       
-      if (geminiResult.backgroundType === 'ai-generated') {
+      if (geminiResult.backgroundImage) {
         backgroundImage = geminiResult.backgroundImage;
         console.log('✅ Gemini image generation successful for regenerate');
+        
+        // Cache the Gemini result
+        setCachedBackground(archetype, userInput, nextStyleIndex, backgroundImage);
+        
         return {
           backgroundImage,
           styleIndex: nextStyleIndex,
-          styleName: 'AI Generated (Gemini)'
-        };
-      } else {
-        backgroundImage = geminiResult.backgroundImage;
-        console.log('🎨 Using Gemini contextual background for regenerate');
-        return {
-          backgroundImage,
-          styleIndex: nextStyleIndex,
-          styleName: 'Contextual Color'
+          styleName: geminiResult.backgroundType === 'ai-generated' ? 'AI Generated (Gemini)' : 'Contextual Color'
         };
       }
     } catch (geminiError) {
-      console.error('❌ Gemini fallback also failed:', geminiError);
+      console.error('❌ Gemini image generation failed:', geminiError);
       // Use solid color as final fallback
       backgroundImage = getSolidColorBackground(archetype);
     }

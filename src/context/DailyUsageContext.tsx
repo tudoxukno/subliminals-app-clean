@@ -16,6 +16,7 @@ interface DailyUsageContextType {
   resetBannerDismissal: () => void;
   getBannerConfig: () => BannerConfig;
   resetDailyUsageForTesting: () => Promise<void>;
+  checkAndShowBannerOnHomeReturn: () => void;
 }
 
 interface BannerConfig {
@@ -38,6 +39,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const [dailyLimit] = useState(3); // From FREEMIUM_CONFIG
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lastDismissedLevel, setLastDismissedLevel] = useState<string | null>(null);
+  const [shouldShowBannerOnHomeReturn, setShouldShowBannerOnHomeReturn] = useState(false);
   
   // Use default subscription state for free tier functionality
   const isPremiumUser = false;
@@ -107,12 +109,13 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
         remaining: dailyLimit - newCount
       });
       
-      // Reset banner dismissal state if moving to a new level
-      const currentLevel = getBannerConfig().level;
-      if (lastDismissedLevel !== currentLevel) {
-        setBannerDismissed(false);
-        setLastDismissedLevel(currentLevel);
-      }
+      // Always reset banner dismissal state on new usage increment
+      // This ensures the banner shows for each completed entry when returning to home
+      setBannerDismissed(false);
+      setLastDismissedLevel(null);
+      setShouldShowBannerOnHomeReturn(true);
+      
+      console.log('🎯 BANNER RESET: Banner dismissal state cleared for new usage increment, flagged to show on home return');
     }
   };
 
@@ -143,28 +146,28 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
         level: 'low',
         message: `${dailyLimit} free entries available today`,
         showUpgrade: false,
-        autoHideDelay: 3000,
+        autoHideDelay: 7000,
       };
     } else if (remaining === 2) {
       return {
         level: 'low',
         message: `${remaining} entries remaining today`,
         showUpgrade: false,
-        autoHideDelay: 4000,
+        autoHideDelay: 7000,
       };
     } else if (remaining === 1) {
       return {
         level: 'medium',
         message: `${remaining} entry remaining today`,
         showUpgrade: true,
-        autoHideDelay: 6000,
+        autoHideDelay: 7000,
       };
     } else if (remaining === 0) {
       return {
         level: 'high',
         message: 'Daily limit reached. Upgrade for unlimited entries.',
         showUpgrade: true,
-        autoHideDelay: null, // No auto-hide
+        autoHideDelay: 7000, // Changed from null to 7000 for auto-hide
       };
     }
     
@@ -173,7 +176,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       level: 'low',
       message: `${remaining} entries remaining`,
       showUpgrade: false,
-      autoHideDelay: 3000,
+      autoHideDelay: 7000,
     };
   };
 
@@ -242,6 +245,15 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
+  const checkAndShowBannerOnHomeReturn = (): void => {
+    if (shouldShowBannerOnHomeReturn && dailyUsage > 0) {
+      console.log('🏠 FORCING BANNER SHOW: User returned to home after new usage increment');
+      setBannerDismissed(false);
+      setLastDismissedLevel(null);
+      setShouldShowBannerOnHomeReturn(false);
+    }
+  };
+
   const value: DailyUsageContextType = {
     dailyUsage,
     dailyLimit,
@@ -259,6 +271,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     },
     getBannerConfig,
     resetDailyUsageForTesting,
+    checkAndShowBannerOnHomeReturn,
   };
 
   return (

@@ -167,10 +167,14 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
 }) => {
   const [loadedCount, setLoadedCount] = useState(0);
 
-  // Reset loaded count when backgrounds change
+  // Only reset loaded count when the number of AI backgrounds changes significantly
+  // This prevents preset backgrounds from going black when AI background is regenerated
   useEffect(() => {
-    setLoadedCount(0);
-  }, [backgrounds]);
+    const aiBackgroundCount = backgrounds.filter(b => b.isAIGenerated === true && b.url).length;
+    if (loadedCount > aiBackgroundCount) {
+      setLoadedCount(0);
+    }
+  }, [backgrounds, loadedCount]);
 
   const handleBackgroundSelect = (background: Background) => {
     // Light haptic feedback for selection
@@ -200,13 +204,15 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
           snapToAlignment="start"
         >
           {backgrounds.map((bg, index) => {
-            // Calculate the actual image index (excluding "None" options)
-            const imageBackgrounds = backgrounds.filter(b => b.source !== null || b.url);
-            const imageIndex = imageBackgrounds.findIndex(b => b.id === bg.id);
+            // Calculate the actual image index (excluding "None" options and preset backgrounds)
+            const aiBackgrounds = backgrounds.filter(b => b.isAIGenerated && b.url);
+            const aiIndex = aiBackgrounds.findIndex(b => b.id === bg.id);
             
-            // For "None" option (no source or url), always allow loading immediately
-            // For images, only start loading when it's their turn in the sequence
-            const shouldStartLoading = (!bg.source && !bg.url) || imageIndex <= loadedCount;
+            // Always allow preset backgrounds (with source) and "None" option to load immediately
+            // Only apply sequential loading to AI-generated backgrounds
+            const shouldStartLoading = (!bg.source && !bg.url) || 
+                                     bg.source !== null || 
+                                     (bg.isAIGenerated === true && aiIndex <= loadedCount);
             
             return (
               <BackgroundThumbnail
@@ -216,7 +222,7 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
                 onPress={() => handleBackgroundSelect(bg)}
                 onRegenerate={onRegenerateBackground ? () => onRegenerateBackground(bg) : undefined}
                 shouldStartLoading={shouldStartLoading}
-                onLoadComplete={(bg.source || bg.url) ? handleImageLoadComplete : () => {}}
+                onLoadComplete={(bg.isAIGenerated === true && bg.url) ? handleImageLoadComplete : () => {}}
                 isRegenerating={isRegenerating}
               />
             );

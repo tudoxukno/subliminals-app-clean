@@ -17,7 +17,7 @@ import {
   Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -561,7 +561,7 @@ const HomeScreen = () => {
   const logoAnimation = useRef(new Animated.Value(0)).current;
   const contentAnimation = useRef(new Animated.Value(1)).current;
   const inputContainerAnimation = useRef(new Animated.Value(0)).current;
-  const { incrementUsage } = useDailyUsage();
+  const { incrementUsage, resetIfNewDay, checkAndShowBannerOnHomeReturn } = useDailyUsage();
 
   const quickstartOptions = [
     [
@@ -577,6 +577,17 @@ const HomeScreen = () => {
   useEffect(() => {
     loadSmartQuickstarts();
   }, []);
+
+  // Reset daily usage check when home screen gains focus
+  // Check if banner should show after completing an entry
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🏠 HOME SCREEN FOCUSED: Checking daily usage state');
+      resetIfNewDay();
+      // Check if we need to show banner after returning from completed entry
+      checkAndShowBannerOnHomeReturn();
+    }, [resetIfNewDay, checkAndShowBannerOnHomeReturn])
+  );
 
   const loadSmartQuickstarts = async () => {
     try {
