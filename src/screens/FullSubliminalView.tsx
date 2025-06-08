@@ -49,7 +49,10 @@ const THRESHOLDS = {
 
 type RootStackParamList = {
   Home: undefined;
-  ArchetypeSelection: { userInput: string };
+  ArchetypeSelection: { 
+    userInput: string; 
+    selectedArchetypeInSession?: string; 
+  };
   FullSubliminalView: {
     userInput: string;
     selectedArchetype: string;
@@ -61,6 +64,7 @@ type RootStackParamList = {
       tags: string[];
       backgroundImage?: string; // AI-generated background URL
     };
+    selectedArchetypeInSession?: string;
   };
   ShareSuite: {
     userInput: string;
@@ -73,6 +77,7 @@ type RootStackParamList = {
       tags: string[];
       backgroundImage?: string; // AI-generated background URL
     };
+    selectedArchetypeInSession?: string;
   };
 };
 
@@ -82,7 +87,7 @@ type RoutePropType = RouteProp<RootStackParamList, 'FullSubliminalView'>;
 const FullSubliminalView = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
-  const { userInput, selectedArchetype, archetypeData } = route.params;
+  const { userInput, selectedArchetype, archetypeData, selectedArchetypeInSession } = route.params;
   const [showButtons, setShowButtons] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -307,7 +312,16 @@ const FullSubliminalView = () => {
     navigation.navigate('ShareSuite', {
       userInput,
       selectedArchetype,
-      archetypeData
+      archetypeData,
+      selectedArchetypeInSession,
+    });
+  };
+
+  // Custom back handler to pass selectedArchetypeInSession back to ArchetypeSelection
+  const handleGoBack = () => {
+    navigation.navigate('ArchetypeSelection', {
+      userInput,
+      selectedArchetypeInSession,
     });
   };
 
@@ -322,7 +336,7 @@ const FullSubliminalView = () => {
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
-        <BackButton withGradient />
+        <BackButton withGradient onPress={handleGoBack} />
 
         <ScrollView 
           ref={scrollViewRef}

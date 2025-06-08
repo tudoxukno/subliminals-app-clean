@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 import { generateSubliminalContent, generateSubliminalContentFast, generateBackgroundImage } from '../services/api';
 import { ArchetypeCardSkeleton } from '../components/ArchetypeCardSkeleton';
 import { useDailyUsage } from '../context/DailyUsageContext';
+import { UpgradeModal } from '../components/UpgradeModal';
 
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -124,7 +125,10 @@ const createResponsePreview = (fullMessage: string): string => {
 type RootStackParamList = {
   TabNavigator: undefined;
   Home: undefined;
-  ArchetypeSelection: { userInput: string };
+  ArchetypeSelection: { 
+    userInput: string; 
+    selectedArchetypeInSession?: string; // Track which archetype was selected for freemium locking
+  };
   FullSubliminalView: { 
     userInput: string;
     selectedArchetype: string;
@@ -136,6 +140,7 @@ type RootStackParamList = {
       tags: string[];
       backgroundImage?: string; // AI-generated background URL
     };
+    selectedArchetypeInSession?: string; // Track selected archetype for freemium locking
   };
   ShareSuite: {
     userInput: string;
@@ -157,7 +162,7 @@ type RoutePropType = RouteProp<RootStackParamList, 'ArchetypeSelection'>;
 const ArchetypeSelectionScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
-  const { userInput } = route.params;
+  const { userInput, selectedArchetypeInSession } = route.params;
   const { incrementUsage, canGenerate, isLimitReached } = useDailyUsage();
   const scrollViewRef = useRef<ScrollView>(null);
   const [loadingArchetype, setLoadingArchetype] = useState<string | null>(null);
@@ -165,6 +170,7 @@ const ArchetypeSelectionScreen = () => {
   const [isGeneratingPreviews, setIsGeneratingPreviews] = useState(true);
   const [showUserInputModal, setShowUserInputModal] = useState(false);
   const [backgroundsLoading, setBackgroundsLoading] = useState<{[key: string]: boolean}>({});
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 2): { truncated: string; needsTruncation: boolean } => {
@@ -281,15 +287,26 @@ const ArchetypeSelectionScreen = () => {
   const handleArchetypeSelect = (archetype: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
+    // Check if this archetype is locked (freemium limitation)
+    const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
+    
+    if (isLocked) {
+      // Show upgrade modal for freemium users
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     // Use the already generated content
     const archetypeData = archetypeResponses[archetype];
     
     if (archetypeData) {
-    navigation.navigate('FullSubliminalView', {
-      userInput,
-      selectedArchetype: archetype,
+      navigation.navigate('FullSubliminalView', {
+        userInput,
+        selectedArchetype: archetype,
         archetypeData,
-    });
+        // Track this archetype as selected for the session
+        selectedArchetypeInSession: selectedArchetypeInSession || archetype,
+      });
     }
   };
 
@@ -348,40 +365,65 @@ const ArchetypeSelectionScreen = () => {
             // Show actual archetype cards with content
             Object.entries(ARCHETYPES).map(([archetype, config]) => {
               const responseData = archetypeResponses[archetype];
+              const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
+              const isSelected = selectedArchetypeInSession === archetype;
+              
               return (
                 <TouchableOpacity
                   key={archetype}
-                  style={styles.archetypeCard}
+                  style={[
+                    styles.archetypeCard,
+                    isLocked && styles.lockedCard,
+                    isSelected && styles.selectedCard
+                  ]}
                   onPress={() => handleArchetypeSelect(archetype)}
-                  disabled={!responseData}
-                  activeOpacity={0.7}
+                  disabled={!responseData || Boolean(isLocked)}
+                  activeOpacity={isLocked ? 1 : 0.7}
                 >
                   <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                      <Text style={styles.cardIcon}>{config.icon}</Text>
+                      <Text style={[styles.cardIcon, isLocked && styles.lockedIcon]}>
+                        {config.icon}
+                      </Text>
                       <View style={styles.titleContainer}>
-                        <Text style={styles.cardTitle}>{archetype}</Text>
+                        <Text style={[styles.cardTitle, isLocked && styles.lockedTitle]}>
+                          {archetype}
+                        </Text>
+                        {isSelected && (
+                          <Text style={styles.selectedBadge}>SELECTED</Text>
+                        )}
                       </View>
                     </View>
                     <View style={styles.quoteContainer}>
-                      <View style={styles.quoteLine} />
-                      <Text style={styles.cardResponse}>
+                      <View style={[styles.quoteLine, isLocked && styles.lockedQuoteLine]} />
+                      <Text style={[styles.cardResponse, isLocked && styles.lockedResponse]}>
                         {createResponsePreview(responseData?.fullMessage || "")}
                       </Text>
                     </View>
                     <View style={styles.bottomContainer}>
                       <View style={styles.toneContainer}>
                         {config.tags.map((tag, index) => (
-                          <View key={index} style={styles.tonePill}>
-                            <Text style={styles.toneText}>{tag}</Text>
+                          <View key={index} style={[styles.tonePill, isLocked && styles.lockedTonePill]}>
+                            <Text style={[styles.toneText, isLocked && styles.lockedToneText]}>
+                              {tag}
+                            </Text>
                           </View>
                         ))}
                       </View>
                       <View style={styles.arrowContainer}>
-                        <Ionicons name="chevron-forward" size={20} color="#666" />
+                        {isLocked ? (
+                          <Ionicons name="lock-closed" size={20} color="#666" />
+                        ) : (
+                          <Ionicons name="chevron-forward" size={20} color="#666" />
+                        )}
                       </View>
                     </View>
                   </View>
+                  {isLocked && (
+                    <View style={styles.lockOverlay}>
+                      <Text style={styles.lockText}>Upgrade to unlock all voices</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })
@@ -421,6 +463,15 @@ const ArchetypeSelectionScreen = () => {
         </View>
       </View>
     </Modal>
+
+    {/* Upgrade Modal */}
+    <UpgradeModal
+      visible={showUpgradeModal}
+      onClose={() => setShowUpgradeModal(false)}
+      trigger="archetype_switching"
+      userInput={userInput}
+      archetypeName={selectedArchetypeInSession}
+    />
     </View>
   );
 };
@@ -618,6 +669,58 @@ const styles = StyleSheet.create({
   },
   userInputSection: {
     marginBottom: 8,
+  },
+  // Freemium locking styles
+  lockedCard: {
+    opacity: 0.6,
+    borderColor: '#333',
+  },
+  selectedCard: {
+    borderColor: '#4A90E2',
+    borderWidth: 2,
+  },
+  lockedIcon: {
+    opacity: 0.5,
+  },
+  lockedTitle: {
+    opacity: 0.6,
+  },
+  selectedBadge: {
+    color: '#4A90E2',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  lockedQuoteLine: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  lockedResponse: {
+    opacity: 0.5,
+  },
+  lockedTonePill: {
+    backgroundColor: '#111',
+    opacity: 0.5,
+  },
+  lockedToneText: {
+    opacity: 0.6,
+  },
+  lockOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  lockText: {
+    color: '#999',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 
