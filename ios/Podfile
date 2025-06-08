@@ -11,6 +11,9 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 install! 'cocoapods',
   :deterministic_uuids => false
 
+# Enable modular headers globally for Firebase Swift dependencies
+use_modular_headers!
+
 prepare_react_native_project!
 
 target 'subliminalsappclean' do

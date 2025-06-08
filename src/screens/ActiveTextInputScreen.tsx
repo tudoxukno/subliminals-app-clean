@@ -38,6 +38,7 @@ interface ActiveTextInputScreenProps {
 const ActiveTextInputScreen: React.FC<ActiveTextInputScreenProps> = ({ route }) => {
   const navigation = useNavigation<NavigationProp>();
   const [userInput, setUserInput] = useState(route?.params?.initialText || '');
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
   const textInputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme(); // Detect system theme
 
@@ -45,12 +46,17 @@ const ActiveTextInputScreen: React.FC<ActiveTextInputScreenProps> = ({ route }) 
     // Auto-focus the text input when the screen loads with minimal delay
     const timer = setTimeout(() => {
       textInputRef.current?.focus();
+      // Set initial cursor position to end of text if there's initial text
+      if (route?.params?.initialText) {
+        const textLength = route.params.initialText.length;
+        setSelection({ start: textLength, end: textLength });
+      }
     }, 50); // Reduced delay
 
     return () => {
       clearTimeout(timer);
     };
-  }, []);
+  }, [route?.params?.initialText]);
 
   const handleBackPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -104,7 +110,18 @@ const ActiveTextInputScreen: React.FC<ActiveTextInputScreenProps> = ({ route }) 
                   ref={textInputRef}
                   style={styles.textInput}
                   value={userInput}
-                  onChangeText={setUserInput}
+                  onChangeText={(text) => {
+                    setUserInput(text);
+                    // Update selection to cursor position to keep it visible
+                    setSelection({ start: text.length, end: text.length });
+                    
+                    // Scroll to end on next frame to ensure cursor stays visible
+                    setTimeout(() => {
+                      textInputRef.current?.focus();
+                    }, 10);
+                  }}
+                  selection={selection}
+                  onSelectionChange={(event) => setSelection(event.nativeEvent.selection)}
                   placeholder="Say what's on your mind..."
                   placeholderTextColor="#666"
                   multiline
@@ -113,7 +130,7 @@ const ActiveTextInputScreen: React.FC<ActiveTextInputScreenProps> = ({ route }) 
                   onSubmitEditing={handleSubmit}
                   autoFocus
                   enablesReturnKeyAutomatically={false}
-                  scrollEnabled={false}
+                  scrollEnabled={true}
                   // Smart keyboard features with system theme
                   keyboardAppearance={colorScheme === 'dark' ? 'dark' : 'light'}
                   autoCorrect={true}
@@ -192,6 +209,7 @@ const styles = StyleSheet.create({
     paddingRight: 70, // Space for submit button
     fontSize: 18, // Increased font size
     color: '#FFFFFF', // Changed to white text for dark background
+    lineHeight: 26, // Better line spacing for readability
     minHeight: 160,
     maxHeight: 250,
     textAlignVertical: 'top',

@@ -15,23 +15,26 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jaylon.subliminals",
-      "googleServicesFile": "./ios/GoogleService-Info.plist",
       "icon": "./assets/icon.png"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-firebase/app",
       "expo-dev-client"
     ],
     "android": {
       "package": "com.jaylon.subliminals",
-      "icon": "./assets/icon.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A0A"
       }
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ca2dbf0a-b7e5-4bc0-98c8-a8b6653f8d58"
+      }
+    },
+    "owner": "tudoxukno"
   }
 }

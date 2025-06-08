@@ -1,13 +1,42 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import firebaseService, { UserProfile } from '../services/firebase';
 import hybridStorage from '../utils/hybridStorage';
 import { getEnvironmentInfo, logEnvironmentInfo } from '../utils/environmentDetection';
 
-// Conditional type imports
+// Conditional imports for Firebase
+let firebaseService: any = null;
+
+try {
+  const firebaseModule = require('../services/firebase');
+  firebaseService = firebaseModule.default;
+} catch (error) {
+  console.log('🔥 Firebase service not available - using mock auth');
+}
+
+// Local UserProfile interface (duplicated to avoid import issues)
+export interface UserProfile {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  isAnonymous: boolean;
+  createdAt: Date;
+  lastActiveAt: Date;
+  preferences?: {
+    favoriteArchetypes?: string[];
+    notificationsEnabled?: boolean;
+    theme?: 'dark' | 'light';
+  };
+}
+
+// Conditional type imports with error handling
 let FirebaseAuthTypes: any = null;
 const env = getEnvironmentInfo();
 if (env.canUseFirebase) {
-  FirebaseAuthTypes = require('@react-native-firebase/auth').FirebaseAuthTypes;
+  try {
+    FirebaseAuthTypes = require('@react-native-firebase/auth').FirebaseAuthTypes;
+  } catch (error) {
+    console.log('🔥 Firebase auth package not found - using mock auth');
+    // Firebase package not installed, continue with mock functionality
+  }
 }
 
 interface AuthContextType {

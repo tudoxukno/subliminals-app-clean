@@ -39,19 +39,10 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lastDismissedLevel, setLastDismissedLevel] = useState<string | null>(null);
   
-  // Get subscription info from context with error handling
-  let subscriptionData;
-  try {
-    subscriptionData = useSubscription();
-  } catch (error) {
-    console.error('DailyUsageProvider: SubscriptionProvider not found, using defaults');
-    subscriptionData = {
-      isPremiumUser: false,
-      isSubscriptionLoaded: false,
-      subscriptionInfo: { isActive: false, tier: 'free' as const, willRenew: false }
-    };
-  }
-  const { isPremiumUser, isSubscriptionLoaded, subscriptionInfo } = subscriptionData;
+  // Use default subscription state for free tier functionality
+  const isPremiumUser = false;
+  const isSubscriptionLoaded = true;
+  const subscriptionInfo = { isActive: false, tier: 'free' as const, willRenew: false };
 
   useEffect(() => {
     loadDailyUsage();

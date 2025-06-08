@@ -8,10 +8,15 @@ let FirebaseAuthTypes: any = null;
 let FirebaseFirestoreTypes: any = null;
 
 if (FIREBASE_ENABLED) {
-  auth = require('@react-native-firebase/auth').default;
-  firestore = require('@react-native-firebase/firestore').default;
-  FirebaseAuthTypes = require('@react-native-firebase/auth').FirebaseAuthTypes;
-  FirebaseFirestoreTypes = require('@react-native-firebase/firestore').FirebaseFirestoreTypes;
+  try {
+    auth = require('@react-native-firebase/auth').default;
+    firestore = require('@react-native-firebase/firestore').default;
+    FirebaseAuthTypes = require('@react-native-firebase/auth').FirebaseAuthTypes;
+    FirebaseFirestoreTypes = require('@react-native-firebase/firestore').FirebaseFirestoreTypes;
+  } catch (error) {
+    console.log('🔥 Firebase packages not found - disabling Firebase functionality');
+    // Firebase packages not installed, continue with mock functionality
+  }
 }
 
 import { SavedSubliminal } from '../types/subliminal';
