@@ -304,8 +304,8 @@ const ArchetypeSelectionScreen = () => {
   const handleArchetypeSelect = (archetype: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    // Check if daily limit is reached
-    const isDailyLimitReached = isLimitReached && !canGenerate;
+    // Check if daily limit is reached - only applies when starting a NEW entry (no existing session)
+    const isDailyLimitReached = isLimitReached && !canGenerate && !selectedArchetypeInSession;
     if (isDailyLimitReached) {
       // Reset banner state so it shows when user returns to home
       resetBannerForLimitAttempt();
@@ -405,7 +405,9 @@ const ArchetypeSelectionScreen = () => {
               const responseData = archetypeResponses[archetype];
               const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
               const isSelected = selectedArchetypeInSession === archetype;
-              const isDailyLimitReached = isLimitReached && !canGenerate;
+              // Daily limit state should only apply when starting a NEW entry (no selectedArchetypeInSession)
+              // If user is within an existing session, they should still be able to view their selected archetype
+              const isDailyLimitReached = isLimitReached && !canGenerate && !selectedArchetypeInSession;
               
               return (
                 <TouchableOpacity
