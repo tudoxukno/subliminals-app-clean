@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -24,8 +24,8 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
   const { showBanner, dismissBanner, resetBannerDismissal, getBannerConfig, dailyUsage, dailyLimit, bannerDismissed, isLimitReached } = useDailyUsage();
   const insets = useSafeAreaInsets();
   
-  // Memoize bannerConfig to prevent recalculation on every render
-  const bannerConfig = useMemo(() => getBannerConfig(), [getBannerConfig]);
+  // Get banner config directly - no need to memoize since it's a simple calculation
+  const bannerConfig = getBannerConfig();
   
   const slideAnim = useRef(new Animated.Value(-120)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
