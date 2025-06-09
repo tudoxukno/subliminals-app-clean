@@ -277,16 +277,23 @@ const FullSubliminalView = () => {
   }, [userInput, selectedArchetype]);
 
   // Increment usage when user actually views the full subliminal (only once per session)
+  // Only increment for NEW entries, not for viewing saved subliminals
   useEffect(() => {
     const trackUsage = async () => {
-      if (!hasIncrementedUsage) {
+      // Only increment usage if this is a new entry (has session indicators)
+      // Saved subliminals won't have selectedArchetypeInSession or archetypeResponses
+      const isNewEntry = !!(selectedArchetypeInSession || archetypeResponses);
+      
+      if (isNewEntry && !hasIncrementedUsage) {
         await incrementUsage();
         setHasIncrementedUsage(true);
         console.log('📊 Daily usage incremented in FullSubliminalView - user actually viewed the subliminal');
+      } else if (!isNewEntry) {
+        console.log('🔍 Viewing saved subliminal - no usage increment needed');
       }
     };
     trackUsage();
-  }, []); // Empty dependency array - only run once when component mounts
+  }, []);
 
   const handleSave = async () => {
     if (isTransitioning) return;
@@ -329,13 +336,21 @@ const FullSubliminalView = () => {
     });
   };
 
-  // Custom back handler to pass selectedArchetypeInSession and archetypeResponses back to ArchetypeSelection
+  // Custom back handler to navigate back appropriately
   const handleGoBack = () => {
-    navigation.navigate('ArchetypeSelection', {
-      userInput,
-      selectedArchetypeInSession,
-      archetypeResponses, // Pass back the archetype responses to preserve them
-    });
+    // If we have selectedArchetypeInSession or archetypeResponses, we came from a new entry flow
+    // Otherwise, we came from saved subliminals and should go back to previous screen
+    if (selectedArchetypeInSession || archetypeResponses) {
+      // Navigate back to ArchetypeSelection for new entry flow
+      navigation.navigate('ArchetypeSelection', {
+        userInput,
+        selectedArchetypeInSession,
+        archetypeResponses, // Pass back the archetype responses to preserve them
+      });
+    } else {
+      // Navigate back to previous screen (likely Saved tab)
+      navigation.goBack();
+    }
   };
 
   if (!fontsLoaded) {
