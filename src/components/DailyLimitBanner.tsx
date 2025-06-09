@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,8 +22,10 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePress }) => {
   const { showBanner, dismissBanner, resetBannerDismissal, getBannerConfig, dailyUsage, dailyLimit, bannerDismissed, isLimitReached } = useDailyUsage();
-  const bannerConfig = getBannerConfig();
   const insets = useSafeAreaInsets();
+  
+  // Memoize bannerConfig to prevent recalculation on every render
+  const bannerConfig = useMemo(() => getBannerConfig(), [getBannerConfig]);
   
   const slideAnim = useRef(new Animated.Value(-120)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
