@@ -176,7 +176,6 @@ const ArchetypeSelectionScreen = () => {
   const [backgroundsLoading, setBackgroundsLoading] = useState<{[key: string]: boolean}>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'archetype_switching'>('archetype_switching');
-  const [hasIncrementedUsage, setHasIncrementedUsage] = useState(false);
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 2): { truncated: string; needsTruncation: boolean } => {
@@ -260,15 +259,8 @@ const ArchetypeSelectionScreen = () => {
 
         const results = await Promise.all(promises);
         
-        // Track usage after successful generation (only on first visit to this entry)
-        // Only increment if we haven't already incremented for this session and we're not returning from selection
-        if (!hasIncrementedUsage && !selectedArchetypeInSession) {
-          await incrementUsage();
-          setHasIncrementedUsage(true);
-          console.log('📊 Daily usage incremented after generation (first visit)');
-        } else {
-          console.log('📊 Skipping usage increment (returning to selection or already incremented)');
-        }
+        // Do NOT increment usage here - usage should only be incremented when user actually views the full subliminal
+        console.log('📊 Previews generated without incrementing usage - usage will be incremented in FullSubliminalView');
 
         // Process responses
         const newResponses: {[key: string]: ArchetypeData} = {};

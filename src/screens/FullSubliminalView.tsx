@@ -28,6 +28,7 @@ import { saveSubliminal, isSubliminalSaved } from '../utils/storage';
 import { FullSubliminalContent } from '../components/FullSubliminalContent';
 import { BackButton } from '../components/BackButton';
 import { ScrollHint } from '../components/ScrollHint';
+import { useDailyUsage } from '../context/DailyUsageContext';
 
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -85,6 +86,7 @@ const FullSubliminalView = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { userInput, selectedArchetype, archetypeData, selectedArchetypeInSession, archetypeResponses } = route.params;
+  const { incrementUsage } = useDailyUsage();
   const [showButtons, setShowButtons] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -92,6 +94,7 @@ const FullSubliminalView = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [contentFitsScreen, setContentFitsScreen] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(false);
+  const [hasIncrementedUsage, setHasIncrementedUsage] = useState(false);
   
   // Single animated value to control the entire transition
   const saveTransitionAnim = useRef(new Animated.Value(0)).current;
@@ -272,6 +275,18 @@ const FullSubliminalView = () => {
     };
     checkSavedStatus();
   }, [userInput, selectedArchetype]);
+
+  // Increment usage when user actually views the full subliminal (only once per session)
+  useEffect(() => {
+    const trackUsage = async () => {
+      if (!hasIncrementedUsage) {
+        await incrementUsage();
+        setHasIncrementedUsage(true);
+        console.log('📊 Daily usage incremented in FullSubliminalView - user actually viewed the subliminal');
+      }
+    };
+    trackUsage();
+  }, []); // Empty dependency array - only run once when component mounts
 
   const handleSave = async () => {
     if (isTransitioning) return;
