@@ -116,6 +116,36 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
 
   // Use cleaned fullMessage for the main content
   const cleanedMessage = cleanMainMessage(archetypeData.fullMessage || archetypeData.response);
+  
+  // Multiple methods to detect hindering entries for maximum reliability
+  const detectHinderingEntry = (): boolean => {
+    const fullContent = archetypeData.fullMessage || archetypeData.response || '';
+    const userInputLower = userInput.toLowerCase();
+    
+    // Method 1: Check if backend set the flag
+    if (archetypeData.isHinderingEntry === true) {
+      return true;
+    }
+    
+    // Method 2: Check for support message in content
+    if (fullContent.includes('💬 If things feel overwhelming')) {
+      return true;
+    }
+    
+    // Method 3: Direct keyword detection from user input (fallback)
+    const hinderingKeywords = [
+      'hate myself', 'kill myself', 'suicide', 'suicidal', 'end it all', 'want to die',
+      'no point living', 'better off dead', 'can\'t go on', 'hopeless', 'worthless',
+      'depressed', 'depression', 'anxiety', 'panic', 'overwhelmed', 'breaking down',
+      'can\'t cope', 'falling apart', 'lost', 'alone', 'scared', 'terrified',
+      'hurt myself', 'self harm', 'cutting', 'pain', 'suffering', 'drowning',
+      'trapped', 'stuck', 'give up', 'quit', 'done', 'finished'
+    ];
+    
+    return hinderingKeywords.some(keyword => userInputLower.includes(keyword));
+  };
+  
+  const isHinderingEntry = detectHinderingEntry();
 
   return (
     <View style={styles.content}>
@@ -153,7 +183,7 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
         <Text style={styles.messageText}>{cleanedMessage}</Text>
         
         {/* Support Resources for Hindering Entries */}
-        {archetypeData.isHinderingEntry && (
+        {isHinderingEntry && (
           <View style={styles.supportContainer}>
             <View style={styles.supportDivider} />
             <Text style={styles.supportEmoji}>❤️‍🩹</Text>
