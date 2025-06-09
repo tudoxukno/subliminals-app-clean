@@ -25,6 +25,7 @@ import { generateSubliminalContent, generateSubliminalContentFast, generateBackg
 import { ArchetypeCardSkeleton } from '../components/ArchetypeCardSkeleton';
 import { useDailyUsage } from '../context/DailyUsageContext';
 import { UpgradeModal } from '../components/UpgradeModal';
+import subscriptionService from '../services/subscriptionService';
 
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -175,7 +176,8 @@ const ArchetypeSelectionScreen = () => {
   const [showUserInputModal, setShowUserInputModal] = useState(false);
   const [backgroundsLoading, setBackgroundsLoading] = useState<{[key: string]: boolean}>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'archetype_switching'>('archetype_switching');
+  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'archetype_switching' | 'premium_archetype'>('archetype_switching');
+  const [upgradeModalArchetype, setUpgradeModalArchetype] = useState<string | undefined>(undefined);
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 2): { truncated: string; needsTruncation: boolean } => {
@@ -312,6 +314,19 @@ const ArchetypeSelectionScreen = () => {
       resetBannerForLimitAttempt();
       // Show upgrade modal for users who hit daily limit
       setUpgradeModalTrigger('daily_limit');
+      setUpgradeModalArchetype(archetype);
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Check if this is a premium-only archetype
+    const isPremiumArchetype = subscriptionService.isArchetypePremium(archetype);
+    const canAccessArchetype = subscriptionService.canAccessArchetype(archetype);
+    
+    if (isPremiumArchetype && !canAccessArchetype) {
+      // Show upgrade modal for premium archetype
+      setUpgradeModalTrigger('premium_archetype');
+      setUpgradeModalArchetype(archetype);
       setShowUpgradeModal(true);
       return;
     }
@@ -322,6 +337,7 @@ const ArchetypeSelectionScreen = () => {
     if (isLocked) {
       // Show upgrade modal for freemium users
       setUpgradeModalTrigger('archetype_switching');
+      setUpgradeModalArchetype(archetype);
       setShowUpgradeModal(true);
       return;
     }
@@ -404,11 +420,22 @@ const ArchetypeSelectionScreen = () => {
             // Show actual archetype cards with content
             Object.entries(ARCHETYPES).map(([archetype, config]) => {
               const responseData = archetypeResponses[archetype];
-              const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
+              
+              // Check if this is a premium archetype and if user can access it
+              const isPremiumArchetype = subscriptionService.isArchetypePremium(archetype);
+              const canAccessArchetype = subscriptionService.canAccessArchetype(archetype);
+              const isPremiumLocked = isPremiumArchetype && !canAccessArchetype;
+              
+              // Check freemium archetype switching limitation
+              const isFreemiumLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
               const isSelected = selectedArchetypeInSession === archetype;
+              
               // Daily limit state should only apply when starting a completely NEW entry (no selectedArchetypeInSession)
               // If user has selectedArchetypeInSession, they're returning from a valid entry (1-3) and can access their selection
               const isDailyLimitReached = isLimitReached && !canGenerate && !selectedArchetypeInSession;
+              
+              // An archetype is locked if it's premium-locked, freemium-locked, or daily limit reached
+              const isLocked = isPremiumLocked || isFreemiumLocked || isDailyLimitReached;
               
               return (
                 <TouchableOpacity
@@ -420,12 +447,12 @@ const ArchetypeSelectionScreen = () => {
                     isDailyLimitReached && styles.limitReachedCard
                   ]}
                   onPress={() => handleArchetypeSelect(archetype)}
-                  disabled={Boolean(isLocked) || isDailyLimitReached}
-                  activeOpacity={isLocked || isDailyLimitReached ? 1 : 0.7}
+                  disabled={isLocked}
+                  activeOpacity={isLocked ? 1 : 0.7}
                 >
                   <View style={styles.cardContent}>
                     {/* Lock icon in top right corner */}
-                    {(isLocked || isDailyLimitReached) && (
+                    {isLocked && (
                       <View style={styles.topRightLockIcon}>
                         <Ionicons name="lock-closed" size={18} color="#666" />
                       </View>
@@ -448,6 +475,9 @@ const ArchetypeSelectionScreen = () => {
                         </Text>
                         {isSelected && (
                           <Text style={styles.selectedBadge}>SELECTED</Text>
+                        )}
+                        {isPremiumLocked && (
+                          <Text style={styles.premiumBadge}>PREMIUM</Text>
                         )}
                       </View>
                     </View>
@@ -487,22 +517,25 @@ const ArchetypeSelectionScreen = () => {
                         ))}
                       </View>
                       <View style={styles.arrowContainer}>
-                        {!isLocked && !isDailyLimitReached ? (
+                        {!isLocked ? (
                           <Ionicons name="chevron-forward" size={20} color="#666" />
                         ) : null}
                       </View>
                     </View>
                   </View>
-                  {(isLocked || isDailyLimitReached) && (
+                  {isLocked && (
                     <TouchableOpacity 
                       style={styles.lockOverlay}
                       onPress={() => {
                         if (isDailyLimitReached) {
                           resetBannerForLimitAttempt();
                           setUpgradeModalTrigger('daily_limit');
+                        } else if (isPremiumLocked) {
+                          setUpgradeModalTrigger('premium_archetype');
                         } else {
                           setUpgradeModalTrigger('archetype_switching');
                         }
+                        setUpgradeModalArchetype(archetype);
                         setShowUpgradeModal(true);
                       }}
                       activeOpacity={0.8}
@@ -567,7 +600,7 @@ const ArchetypeSelectionScreen = () => {
       onClose={() => setShowUpgradeModal(false)}
       trigger={upgradeModalTrigger}
       userInput={userInput}
-      archetypeName={selectedArchetypeInSession}
+      archetypeName={upgradeModalArchetype}
     />
     </View>
   );
@@ -887,6 +920,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  premiumBadge: {
+    color: '#4A90E2',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
 });
 
