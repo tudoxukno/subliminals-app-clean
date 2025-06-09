@@ -122,6 +122,8 @@ const createResponsePreview = (fullMessage: string): string => {
   return preview;
 };
 
+
+
 type RootStackParamList = {
   TabNavigator: undefined;
   Home: undefined;
@@ -163,7 +165,7 @@ const ArchetypeSelectionScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { userInput, selectedArchetypeInSession } = route.params;
-  const { incrementUsage, canGenerate, isLimitReached } = useDailyUsage();
+  const { incrementUsage, canGenerate, isLimitReached, resetBannerForLimitAttempt, checkAndShowBannerOnHomeReturn } = useDailyUsage();
   const scrollViewRef = useRef<ScrollView>(null);
   const [loadingArchetype, setLoadingArchetype] = useState<string | null>(null);
   const [archetypeResponses, setArchetypeResponses] = useState<{[key: string]: ArchetypeData}>({});
@@ -171,6 +173,7 @@ const ArchetypeSelectionScreen = () => {
   const [showUserInputModal, setShowUserInputModal] = useState(false);
   const [backgroundsLoading, setBackgroundsLoading] = useState<{[key: string]: boolean}>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'archetype_switching'>('archetype_switching');
   const [hasIncrementedUsage, setHasIncrementedUsage] = useState(false);
 
   // Helper function to truncate user input
@@ -224,12 +227,8 @@ const ArchetypeSelectionScreen = () => {
   // Generate preview content for all archetypes when screen loads (fast text-only)
   useEffect(() => {
     const generatePreviews = async () => {
-      if (!canGenerate) {
-        // If daily limit is reached, show a message or redirect
-        console.log('Daily limit reached, cannot generate previews');
-        setIsGeneratingPreviews(false);
-        return;
-      }
+      // Always generate real previews, regardless of daily limit status
+      // The UI will handle the clickability and styling based on limit state
 
       try {
         console.log('🎯 Starting fast preview generation for user input:', userInput);
@@ -254,6 +253,7 @@ const ArchetypeSelectionScreen = () => {
         const results = await Promise.all(promises);
         
         // Track usage after successful generation (only on first visit to this entry)
+        // Only increment if we haven't already incremented for this session and we're not returning from selection
         if (!hasIncrementedUsage && !selectedArchetypeInSession) {
           await incrementUsage();
           setHasIncrementedUsage(true);
@@ -267,6 +267,15 @@ const ArchetypeSelectionScreen = () => {
         results.forEach(({ archetype, response }) => {
           if (response) {
             newResponses[archetype] = parseOpenAIResponse(response, archetype);
+          } else {
+            // Create fallback response for failed API calls
+            newResponses[archetype] = {
+              icon: ARCHETYPES[archetype as keyof typeof ARCHETYPES].icon,
+              response: "Unable to generate preview",
+              fullMessage: "We're having trouble connecting right now. Please try again or upgrade for unlimited access.",
+              quote: "Your personalized response awaits...",
+              tags: ARCHETYPES[archetype as keyof typeof ARCHETYPES].tags,
+            };
           }
         });
 
@@ -284,6 +293,8 @@ const ArchetypeSelectionScreen = () => {
   }, [userInput, canGenerate]);
 
   const handleGoBack = () => {
+    // Trigger banner check when returning to home
+    checkAndShowBannerOnHomeReturn();
     navigation.reset({
       index: 0,
       routes: [{ name: 'Home' }]
@@ -293,11 +304,23 @@ const ArchetypeSelectionScreen = () => {
   const handleArchetypeSelect = (archetype: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
+    // Check if daily limit is reached
+    const isDailyLimitReached = isLimitReached && !canGenerate;
+    if (isDailyLimitReached) {
+      // Reset banner state so it shows when user returns to home
+      resetBannerForLimitAttempt();
+      // Show upgrade modal for users who hit daily limit
+      setUpgradeModalTrigger('daily_limit');
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     // Check if this archetype is locked (freemium limitation)
     const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
     
     if (isLocked) {
       // Show upgrade modal for freemium users
+      setUpgradeModalTrigger('archetype_switching');
       setShowUpgradeModal(true);
       return;
     }
@@ -306,6 +329,13 @@ const ArchetypeSelectionScreen = () => {
     const archetypeData = archetypeResponses[archetype];
     
     if (archetypeData) {
+      // Check if this was a fallback response due to API failure
+      if (archetypeData.response === "Unable to generate preview") {
+        // Try to regenerate the content
+        console.log(`🔄 Retrying generation for ${archetype} due to previous failure`);
+        // For now, show the fallback content - in future could implement retry logic
+      }
+      
       navigation.navigate('FullSubliminalView', {
         userInput,
         selectedArchetype: archetype,
@@ -373,6 +403,7 @@ const ArchetypeSelectionScreen = () => {
               const responseData = archetypeResponses[archetype];
               const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
               const isSelected = selectedArchetypeInSession === archetype;
+              const isDailyLimitReached = isLimitReached && !canGenerate;
               
               return (
                 <TouchableOpacity
@@ -380,19 +411,28 @@ const ArchetypeSelectionScreen = () => {
                   style={[
                     styles.archetypeCard,
                     isLocked && styles.lockedCard,
-                    isSelected && styles.selectedCard
+                    isSelected && styles.selectedCard,
+                    isDailyLimitReached && styles.limitReachedCard
                   ]}
                   onPress={() => handleArchetypeSelect(archetype)}
-                  disabled={!responseData || Boolean(isLocked)}
-                  activeOpacity={isLocked ? 1 : 0.7}
+                  disabled={Boolean(isLocked) || isDailyLimitReached}
+                  activeOpacity={isLocked || isDailyLimitReached ? 1 : 0.7}
                 >
                   <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                      <Text style={[styles.cardIcon, isLocked && styles.lockedIcon]}>
+                      <Text style={[
+                        styles.cardIcon, 
+                        isLocked && styles.lockedIcon,
+                        isDailyLimitReached && styles.limitReachedIcon
+                      ]}>
                         {config.icon}
                       </Text>
                       <View style={styles.titleContainer}>
-                        <Text style={[styles.cardTitle, isLocked && styles.lockedTitle]}>
+                        <Text style={[
+                          styles.cardTitle, 
+                          isLocked && styles.lockedTitle,
+                          isDailyLimitReached && styles.limitReachedTitle
+                        ]}>
                           {archetype}
                         </Text>
                         {isSelected && (
@@ -401,23 +441,53 @@ const ArchetypeSelectionScreen = () => {
                       </View>
                     </View>
                     <View style={styles.quoteContainer}>
-                      <View style={[styles.quoteLine, isLocked && styles.lockedQuoteLine]} />
-                      <Text style={[styles.cardResponse, isLocked && styles.lockedResponse]}>
-                        {createResponsePreview(responseData?.fullMessage || "")}
-                      </Text>
+                      <View style={[
+                        styles.quoteLine, 
+                        isLocked && styles.lockedQuoteLine,
+                        isDailyLimitReached && styles.limitReachedQuoteLine
+                      ]} />
+                      <View style={isDailyLimitReached ? styles.blurredTextContainer : undefined}>
+                        <Text style={[
+                          styles.cardResponse, 
+                          isLocked && styles.lockedResponse,
+                          isDailyLimitReached && styles.limitReachedResponse
+                        ]}>
+                          {createResponsePreview(responseData?.fullMessage || "")}
+                        </Text>
+                        {isDailyLimitReached && <View style={styles.blurOverlay} />}
+                      </View>
                     </View>
                     <View style={styles.bottomContainer}>
                       <View style={styles.toneContainer}>
                         {config.tags.map((tag, index) => (
-                          <View key={index} style={[styles.tonePill, isLocked && styles.lockedTonePill]}>
-                            <Text style={[styles.toneText, isLocked && styles.lockedToneText]}>
+                          <View key={index} style={[
+                            styles.tonePill, 
+                            isLocked && styles.lockedTonePill,
+                            isDailyLimitReached && styles.limitReachedTonePill
+                          ]}>
+                            <Text style={[
+                              styles.toneText, 
+                              isLocked && styles.lockedToneText,
+                              isDailyLimitReached && styles.limitReachedToneText
+                            ]}>
                               {tag}
                             </Text>
                           </View>
                         ))}
                       </View>
                       <View style={styles.arrowContainer}>
-                        {isLocked ? (
+                        {isDailyLimitReached ? (
+                          <TouchableOpacity 
+                            style={styles.upgradeButton}
+                            onPress={() => {
+                              resetBannerForLimitAttempt();
+                              setUpgradeModalTrigger('daily_limit');
+                              setShowUpgradeModal(true);
+                            }}
+                          >
+                            <Text style={styles.upgradeButtonText}>UPGRADE</Text>
+                          </TouchableOpacity>
+                        ) : isLocked ? (
                           <Ionicons name="lock-closed" size={20} color="#666" />
                         ) : (
                           <Ionicons name="chevron-forward" size={20} color="#666" />
@@ -425,7 +495,7 @@ const ArchetypeSelectionScreen = () => {
                       </View>
                     </View>
                   </View>
-                  {isLocked && (
+                  {isLocked && !isDailyLimitReached && (
                     <View style={styles.lockOverlay}>
                       <Text style={styles.lockText}>Upgrade to unlock all voices</Text>
                     </View>
@@ -474,7 +544,7 @@ const ArchetypeSelectionScreen = () => {
     <UpgradeModal
       visible={showUpgradeModal}
       onClose={() => setShowUpgradeModal(false)}
-      trigger="archetype_switching"
+      trigger={upgradeModalTrigger}
       userInput={userInput}
       archetypeName={selectedArchetypeInSession}
     />
@@ -727,6 +797,55 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     fontWeight: '500',
+  },
+  // Daily limit reached styles
+  limitReachedCard: {
+    opacity: 0.9,
+    borderColor: '#2A2A2A',
+  },
+  limitReachedIcon: {
+    opacity: 0.7,
+  },
+  limitReachedTitle: {
+    opacity: 0.8,
+  },
+  limitReachedQuoteLine: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  blurredTextContainer: {
+    position: 'relative',
+    flex: 1,
+  },
+  limitReachedResponse: {
+    opacity: 1, // Keep text visible behind blur
+  },
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(26, 26, 26, 0.8)',
+    borderRadius: 4,
+  },
+  limitReachedTonePill: {
+    backgroundColor: '#111',
+    opacity: 0.7,
+  },
+  limitReachedToneText: {
+    opacity: 0.7,
+  },
+  upgradeButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  upgradeButtonText: {
+    color: '#000000',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });
 

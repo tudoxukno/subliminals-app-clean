@@ -17,6 +17,7 @@ interface DailyUsageContextType {
   getBannerConfig: () => BannerConfig;
   resetDailyUsageForTesting: () => Promise<void>;
   checkAndShowBannerOnHomeReturn: () => void;
+  resetBannerForLimitAttempt: () => void;
 }
 
 interface BannerConfig {
@@ -47,7 +48,18 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const subscriptionInfo = { isActive: false, tier: 'free' as const, willRenew: false };
 
   useEffect(() => {
-    loadDailyUsage();
+    const initialize = async () => {
+      // Clean up any legacy usage tracking data on app start
+      try {
+        await AsyncStorage.removeItem('@subliminals:daily_usage');
+      } catch (error) {
+        console.error('Error cleaning legacy data:', error);
+      }
+      
+      await loadDailyUsage();
+    };
+    
+    initialize();
   }, []);
 
   const getTodayKey = (): string => {
@@ -61,7 +73,15 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       
       if (usageJson) {
         const usageData: DailyUsageData = JSON.parse(usageJson);
-        setDailyUsage(usageData.count);
+        // HARD CAP: Never load usage above the daily limit
+        const cappedUsage = Math.min(usageData.count, dailyLimit);
+        setDailyUsage(cappedUsage);
+        
+        if (usageData.count > dailyLimit) {
+          console.log('🚨 CORRUPTED DATA DETECTED: Usage was above limit, capped at', dailyLimit);
+          // Save the corrected data back to storage
+          await saveDailyUsage(cappedUsage);
+        }
       } else {
         // New day, reset usage
         setDailyUsage(0);
@@ -77,11 +97,17 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const saveDailyUsage = async (count: number): Promise<void> => {
     try {
       const todayKey = getTodayKey();
+      // HARD CAP: Never save usage above the daily limit
+      const cappedCount = Math.min(count, dailyLimit);
       const usageData: DailyUsageData = {
         date: todayKey,
-        count,
+        count: cappedCount,
         entries: [] // Could store entry IDs for more detailed tracking
       };
+      
+      if (count > dailyLimit) {
+        console.log('🚨 SAVE BLOCKED: Attempted to save usage above limit, capped at', dailyLimit);
+      }
       
       await AsyncStorage.setItem(`dailyUsage_${todayKey}`, JSON.stringify(usageData));
     } catch (error) {
@@ -92,13 +118,21 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const incrementUsage = async (): Promise<void> => {
     console.log('📊 INCREMENT USAGE DEBUG:', {
       currentUsage: dailyUsage,
+      dailyLimit: dailyLimit,
+      isLimitReached: dailyUsage >= dailyLimit,
       subscriptionInfo: subscriptionInfo,
-      willIncrement: subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive
+      willIncrement: subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && dailyUsage < dailyLimit
     });
     
-    // Only increment for free users
-    if (subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive) {
-      const newCount = dailyUsage + 1;
+    // HARD CAP: Never allow usage to exceed the limit
+    if (dailyUsage >= dailyLimit) {
+      console.log('📊 USAGE INCREMENT BLOCKED: Daily limit already reached or exceeded');
+      return;
+    }
+    
+    // Only increment for free users and only if under the daily limit
+    if (subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && dailyUsage < dailyLimit) {
+      const newCount = Math.min(dailyUsage + 1, dailyLimit); // Hard cap at dailyLimit
       setDailyUsage(newCount);
       await saveDailyUsage(newCount);
       
@@ -106,7 +140,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
         oldCount: dailyUsage,
         newCount: newCount,
         limit: dailyLimit,
-        remaining: dailyLimit - newCount
+        remaining: Math.max(0, dailyLimit - newCount)
       });
       
       // Always reset banner dismissal state on new usage increment
@@ -116,6 +150,8 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       setShouldShowBannerOnHomeReturn(true);
       
       console.log('🎯 BANNER RESET: Banner dismissal state cleared for new usage increment, flagged to show on home return');
+    } else if (dailyUsage >= dailyLimit) {
+      console.log('📊 USAGE INCREMENT SKIPPED: Daily limit already reached');
     }
   };
 
@@ -162,7 +198,8 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
         showUpgrade: true,
         autoHideDelay: 7000,
       };
-    } else if (remaining === 0) {
+    } else if (remaining <= 0) {
+      // Handle both exactly 0 and negative values (in case of bugs)
       return {
         level: 'high',
         message: 'Daily limit reached. Upgrade for unlimited entries.',
@@ -171,7 +208,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       };
     }
     
-    // Default case (shouldn't happen)
+    // Default case for other positive remaining values
     return {
       level: 'low',
       message: `${remaining} entries remaining`,
@@ -234,12 +271,15 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       const todayKey = getTodayKey();
       await AsyncStorage.removeItem(`dailyUsage_${todayKey}`);
       
+      // Also clear any legacy usage tracking data that might interfere
+      await AsyncStorage.removeItem('@subliminals:daily_usage');
+      
       // Reset all state
       setDailyUsage(0);
       setBannerDismissed(false);
       setLastDismissedLevel(null);
       
-      console.log('🧪 TESTING RESET: Daily usage cleared and reset to 0/3');
+      console.log('🧪 TESTING RESET: Daily usage cleared and reset to 0/3, legacy data cleaned');
     } catch (error) {
       console.error('Error resetting daily usage for testing:', error);
     }
@@ -251,6 +291,15 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       setBannerDismissed(false);
       setLastDismissedLevel(null);
       setShouldShowBannerOnHomeReturn(false);
+    }
+  };
+
+  const resetBannerForLimitAttempt = (): void => {
+    if (isLimitReached) {
+      console.log('🚫 LIMIT ATTEMPT: User tried to access content after hitting daily limit, resetting banner');
+      setBannerDismissed(false);
+      setLastDismissedLevel(null);
+      setShouldShowBannerOnHomeReturn(true);
     }
   };
 
@@ -272,6 +321,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     getBannerConfig,
     resetDailyUsageForTesting,
     checkAndShowBannerOnHomeReturn,
+    resetBannerForLimitAttempt,
   };
 
   return (
