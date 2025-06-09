@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import {
   PlayfairDisplay_500Medium,
   PlayfairDisplay_500Medium_Italic,
 } from '@expo-google-fonts/playfair-display';
+import { CrisisLevel, getCrisisResourcesByRegion } from '../utils/crisisResources';
+import CrisisModal from './CrisisModal';
 
 type FullSubliminalContentProps = {
   userInput: string;
@@ -63,24 +65,273 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
   selectedArchetype,
   archetypeData,
 }) => {
+  // ═══ ALL HOOKS MUST BE AT THE TOP - NO CONDITIONAL LOGIC BEFORE HOOKS ═══
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_500Medium,
     PlayfairDisplay_500Medium_Italic,
   });
   const [showUserInputModal, setShowUserInputModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showCrisisModal, setShowCrisisModal] = useState(false);
 
-  // Helper function to clean the main message by removing appended support text
+  // Crisis detection logic (moved up to ensure hooks are called consistently)
   const cleanMainMessage = (fullMessage: string): string => {
-    // Remove the appended support message to create visual separation
     const supportMessagePattern = /\s*💬 If things feel overwhelming, talking to someone can really help\. You're not alone\./;
     return fullMessage.replace(supportMessagePattern, '').trim();
   };
 
-  // Helper function to truncate user input
+  const cleanedMessage = cleanMainMessage(archetypeData.fullMessage || archetypeData.response);
+  
+  const detectHinderingEntry = (): boolean => {
+    const fullContent = archetypeData.fullMessage || archetypeData.response || '';
+    
+    if (archetypeData.isHinderingEntry === true) {
+      return true;
+    }
+    
+    if (fullContent.includes('💬 If things feel overwhelming')) {
+      return true;
+    }
+    
+    const normalizedInput = userInput
+      .toLowerCase()
+      .replace(/[.,!?;:\-()[\]{}'"]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const positivePatterns = [
+      'feel great', 'feeling great', 'feel amazing', 'feeling amazing', 
+      'feel wonderful', 'feeling wonderful', 'feel fantastic', 'feeling fantastic',
+      'feel good', 'feeling good', 'feel better', 'feeling better',
+      'feel happy', 'feeling happy', 'feel joyful', 'feeling joyful',
+      'feel blessed', 'feeling blessed', 'feel grateful', 'feeling grateful',
+      'feel thankful', 'feeling thankful', 'feel positive', 'feeling positive',
+      'feel optimistic', 'feeling optimistic', 'feel hopeful', 'feeling hopeful',
+      'feel confident', 'feeling confident', 'feel strong', 'feeling strong',
+      'feel proud', 'feeling proud', 'feel accomplished', 'feeling accomplished',
+      'feel successful', 'feeling successful', 'feel fulfilled', 'feeling fulfilled',
+      'feel content', 'feeling content', 'feel peaceful', 'feeling peaceful',
+      'feel calm', 'feeling calm', 'feel relaxed', 'feeling relaxed',
+      'feel energized', 'feeling energized', 'feel motivated', 'feeling motivated',
+      'feel inspired', 'feeling inspired', 'feel excited', 'feeling excited',
+      'feel ready', 'feeling ready', 'feel prepared', 'feeling prepared',
+      'feel supported', 'feeling supported', 'feel loved', 'feeling loved',
+      'feel appreciated', 'feeling appreciated', 'feel valued', 'feeling valued',
+      'feel connected', 'feeling connected', 'feel like im growing', 'feeling like im growing',
+      'feel progress', 'feeling progress', 'making progress', 'growing stronger',
+      'getting better', 'improving', 'healing', 'recovered', 'recovering',
+      'feel centered', 'feeling centered', 'feel balanced', 'feeling balanced',
+      'feel at peace', 'feeling at peace', 'feel whole', 'feeling whole',
+      'had a good day', 'having a good day', 'great day', 'wonderful day',
+      'things are good', 'things are great', 'life is good', 'life is great',
+      'things are looking up', 'turning around', 'getting back on track',
+      'feeling myself again', 'back to myself', 'like myself again',
+      'proud of myself', 'accomplished something', 'achieved', 'succeeded',
+      'won', 'victory', 'breakthrough', 'milestone', 'celebration',
+      'grateful for', 'thankful for', 'blessed with', 'appreciate',
+      'love my', 'surrounded by love', 'supported by', 'great friends',
+      'wonderful family', 'amazing people', 'feel loved by', 'care about me',
+      'excited about', 'looking forward', 'cant wait', 'eager to',
+      'optimistic about', 'hopeful about', 'confident about', 'ready for',
+      'bright future', 'good things coming', 'positive changes'
+    ];
+    
+    const hasPositiveContent = positivePatterns.some(pattern => 
+      normalizedInput.includes(pattern)
+    );
+    
+    if (hasPositiveContent) {
+      return false;
+    }
+    
+    const hinderingPatterns = [
+      'kill myself', 'end my life', 'take my own life', 'commit suicide', 
+      'want to die', 'wish i was dead', 'better off dead', 'end it all',
+      'suicide', 'suicidal', 'want to disappear forever', 'cease to exist',
+      'should just disappear', 'should disappear', 'should just die',
+      'should kill myself', 'would be better if i died', 'ready to die',
+      'want to be dead', 'wish i could die', 'hope i die', 'need to die',
+      'going to kill myself', 'planning to die', 'done with life',
+      'thinking about suicide', 'considering suicide', 'want out of this life',
+      'dont want to live anymore', 'don\'t want to live anymore', 'dont want to live',
+      'feel like ending it all', 'ending it all', 'want to end everything',
+      'end it all', 'end everything', 'end this all', 'just end it all',
+      'want to end it all', 'i want to end it all', 'want to just end it all',
+      'i want to just end it all', 'just want to end it all', 'wanna end it all',
+      'gonna end it all', 'going to end it all', 'ready to end it all',
+      'need to end it all', 'time to end it all', 'should end it all',
+      'have to end it all', 'might end it all', 'could end it all',
+      'feel like ending it all', 'thinking about ending it all',
+      'considering ending it all', 'planning to end it all',
+      'want to disappear', 'wish i could disappear', 'want to just disappear',
+      'wish i could just disappear', 'should just disappear', 'need to disappear',
+      'going to disappear', 'gonna disappear', 'wanna disappear',
+      'feel like disappearing', 'thinking about disappearing',
+      'want to disappear forever', 'wish i could disappear forever',
+      'should disappear forever', 'vanish forever', 'fade away',
+      'invisible forever', 'gone forever', 'erased from existence',
+      'dont want to live', 'don\'t want to live', 'do not want to live',
+      'dont want to live anymore', 'don\'t want to live anymore',
+      'do not want to live anymore', 'dont wanna live', 'don\'t wanna live',
+      'tired of living', 'sick of living', 'done with living',
+      'cant live like this', 'can\'t live like this', 'cannot live like this',
+      'dont want to be alive', 'don\'t want to be alive',
+      'wish i wasnt alive', 'wish i wasn\'t alive', 'wish i was never alive',
+      'hurt myself', 'harm myself', 'cut myself', 'cutting myself',
+      'self harm', 'self-harm', 'want to cut', 'going to cut',
+      'thinking about cutting', 'need to cut', 'deserve to be hurt',
+      'should hurt myself', 'want to hurt myself', 'make myself bleed',
+      'punish myself', 'deserve pain', 'need to feel pain',
+      'everyone would be better off without me', 'better off without me',
+      'world would be better without me', 'wish i was never born',
+      'wish i never existed', 'shouldnt exist', 'regret being born',
+      'shouldve never been born', 'should have never been born',
+      'never should have been born', 'mistake to be born',
+      'shouldnt be here', 'don\'t belong here', 'dont belong here',
+      'nobody would miss me', 'no one would miss me', 'wouldnt be missed',
+      'nobody would care', 'no one would care', 'nobody cares',
+      'hate myself', 'hate my life', 'disgusted with myself',
+      'worthless', 'useless', 'pathetic', 'failure',
+      'cant do anything right', 'mess everything up', 'ruin everything',
+      'lost cause', 'hopeless case', 'beyond help',
+      'mental breakdown', 'losing my mind', 'going crazy',
+      'cant cope', 'cant handle', 'overwhelmed completely',
+      'drowning', 'suffocating', 'trapped forever'
+    ];
+
+    const getLevenshteinDistance = (str1: string, str2: string): number => {
+      const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+      
+      for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+      for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+      
+      for (let j = 1; j <= str2.length; j++) {
+        for (let i = 1; i <= str1.length; i++) {
+          const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+          matrix[j][i] = Math.min(
+            matrix[j][i - 1] + 1,
+            matrix[j - 1][i] + 1,
+            matrix[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      
+      return matrix[str2.length][str1.length];
+    };
+
+    const hasHinderingContent = hinderingPatterns.some(pattern => {
+      if (normalizedInput.includes(pattern)) {
+        return true;
+      }
+      
+      if (pattern.includes('kill myself') || pattern.includes('end my life') || 
+          pattern.includes('suicide') || pattern.includes('want to die')) {
+        const patternWords = pattern.split(' ');
+        const inputWords = normalizedInput.split(' ');
+        let matchCount = 0;
+        
+        patternWords.forEach(word => {
+          if (inputWords.includes(word) || 
+              inputWords.includes(word.replace('cant', 'cannot')) ||
+              inputWords.includes(word.replace('im', 'i am'))) {
+            matchCount++;
+          }
+        });
+        
+        if (matchCount >= Math.max(2, Math.ceil(patternWords.length * 0.7))) {
+          return true;
+        }
+      }
+      
+      const words = pattern.split(' ');
+      if (words.length <= 3) {
+        for (const word of normalizedInput.split(' ')) {
+          if (getLevenshteinDistance(word, pattern) <= 2 && word.length >= 4) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    });
+
+    return hasHinderingContent;
+  };
+
+  const detectCrisisLevel = (): CrisisLevel => {
+    const fullContent = archetypeData.fullMessage || archetypeData.response || '';
+    
+    if (archetypeData.isHinderingEntry === true) {
+      return 'hindering';
+    }
+    
+    if (fullContent.includes('💬 If things feel overwhelming')) {
+      return 'hindering';
+    }
+    
+    const normalizedInput = userInput
+      .toLowerCase()
+      .replace(/[.,!?;:\-()[\]{}'"]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const crisisPatterns = [
+      'going to kill myself tonight', 'im going to kill myself', 'planning to kill myself',
+      'have a plan to', 'going to do it tonight', 'ready to do it',
+      'tonight is the night', 'this is it', 'goodbye world',
+      'cant take another day', 'done with everything', 'no way out',
+      'nobody can stop me', 'made up my mind', 'final decision',
+      'writing my note', 'said my goodbyes', 'ready to go'
+    ];
+    
+    const hasCrisisContent = crisisPatterns.some(pattern => 
+      normalizedInput.includes(pattern)
+    );
+    
+    if (hasCrisisContent) {
+      return 'crisis';
+    }
+    
+    const elevatedConcernPatterns = [
+      'want to end it all', 'feel like ending it all', 'want to end everything',
+      'want to disappear', 'wish i could disappear', 'want to just disappear',
+      'cant take this anymore', 'cant go on', 'cant handle this',
+      'want to give up', 'ready to give up', 'giving up on everything',
+      'no point anymore', 'whats the point', 'why bother',
+      'tired of living', 'exhausted from living', 'done with life',
+      'want out', 'need to escape', 'trapped forever',
+      'cant keep going', 'done fighting', 'tired of fighting'
+    ];
+    
+    const hasElevatedConcern = elevatedConcernPatterns.some(pattern => 
+      normalizedInput.includes(pattern)
+    );
+    
+    if (hasElevatedConcern) {
+      return 'elevated';
+    }
+    
+    if (detectHinderingEntry()) {
+      return 'hindering';
+    }
+    
+    return 'normal';
+  };
+
+  const crisisLevel = detectCrisisLevel();
+  const isHinderingEntry = crisisLevel === 'hindering' || detectHinderingEntry();
+  
+  // TIER 3: Active Crisis - Show full-screen modal immediately (useEffect MUST be called consistently)
+  useEffect(() => {
+    if (crisisLevel === 'crisis') {
+      setShowCrisisModal(true);
+    }
+  }, [crisisLevel]);
+
+  // Helper functions
   const truncateUserInput = (input: string, maxLines: number = 3): { truncated: string; needsTruncation: boolean } => {
     const words = input.split(' ');
-    const wordsPerLine = 6; // Approximate words per line for larger text
+    const wordsPerLine = 6;
     const maxWords = maxLines * wordsPerLine;
     
     if (words.length <= maxWords) {
@@ -110,319 +361,18 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
 
   const { truncated: displayUserInput, needsTruncation } = truncateUserInput(userInput);
 
+  // DEBUG: Log crisis detection results
+  console.log('🚨 CRISIS DETECTION DEBUG:', {
+    userInput: userInput.substring(0, 50) + (userInput.length > 50 ? '...' : ''),
+    crisisLevel,
+    isHinderingEntry,
+    backendFlag: archetypeData.isHinderingEntry
+  });
+
+  // Early return AFTER all hooks have been called
   if (!fontsLoaded) {
     return null;
   }
-
-  // Use cleaned fullMessage for the main content
-  const cleanedMessage = cleanMainMessage(archetypeData.fullMessage || archetypeData.response);
-  
-  // Multiple methods to detect hindering entries for maximum reliability
-  const detectHinderingEntry = (): boolean => {
-    const fullContent = archetypeData.fullMessage || archetypeData.response || '';
-    
-    // Method 1: Check if backend set the flag
-    if (archetypeData.isHinderingEntry === true) {
-      return true;
-    }
-    
-    // Method 2: Check for support message in content
-    if (fullContent.includes('💬 If things feel overwhelming')) {
-      return true;
-    }
-    
-    // Method 3: Enhanced keyword detection from user input (fallback)
-    // Normalize input: lowercase, remove extra spaces/punctuation for better matching
-    const normalizedInput = userInput
-      .toLowerCase()
-      .replace(/[.,!?;:\-()[\]{}'"]/g, ' ') // Replace punctuation with spaces
-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-      .trim();
-    
-    // POSITIVE FILTERING: First check if the message is clearly positive
-    // If it contains strong positive indicators, skip hindering detection
-    const positivePatterns = [
-      // Strong positive emotions
-      'feel great', 'feeling great', 'feel amazing', 'feeling amazing', 
-      'feel wonderful', 'feeling wonderful', 'feel fantastic', 'feeling fantastic',
-      'feel good', 'feeling good', 'feel better', 'feeling better',
-      'feel happy', 'feeling happy', 'feel joyful', 'feeling joyful',
-      'feel blessed', 'feeling blessed', 'feel grateful', 'feeling grateful',
-      'feel thankful', 'feeling thankful', 'feel positive', 'feeling positive',
-      'feel optimistic', 'feeling optimistic', 'feel hopeful', 'feeling hopeful',
-      'feel confident', 'feeling confident', 'feel strong', 'feeling strong',
-      'feel proud', 'feeling proud', 'feel accomplished', 'feeling accomplished',
-      'feel successful', 'feeling successful', 'feel fulfilled', 'feeling fulfilled',
-      'feel content', 'feeling content', 'feel peaceful', 'feeling peaceful',
-      'feel calm', 'feeling calm', 'feel relaxed', 'feeling relaxed',
-      'feel energized', 'feeling energized', 'feel motivated', 'feeling motivated',
-      'feel inspired', 'feeling inspired', 'feel excited', 'feeling excited',
-      'feel ready', 'feeling ready', 'feel prepared', 'feeling prepared',
-      'feel supported', 'feeling supported', 'feel loved', 'feeling loved',
-      'feel appreciated', 'feeling appreciated', 'feel valued', 'feeling valued',
-      
-      // Positive growth & connection
-      'feel connected', 'feeling connected', 'feel like im growing', 'feeling like im growing',
-      'feel progress', 'feeling progress', 'making progress', 'growing stronger',
-      'getting better', 'improving', 'healing', 'recovered', 'recovering',
-      'feel centered', 'feeling centered', 'feel balanced', 'feeling balanced',
-      'feel at peace', 'feeling at peace', 'feel whole', 'feeling whole',
-      
-      // Positive activities & states
-      'had a good day', 'having a good day', 'great day', 'wonderful day',
-      'things are good', 'things are great', 'life is good', 'life is great',
-      'things are looking up', 'turning around', 'getting back on track',
-      'feeling myself again', 'back to myself', 'like myself again',
-      
-      // Achievement & accomplishment
-      'proud of myself', 'accomplished something', 'achieved', 'succeeded',
-      'won', 'victory', 'breakthrough', 'milestone', 'celebration',
-      'grateful for', 'thankful for', 'blessed with', 'appreciate',
-      
-      // Positive relationships
-      'love my', 'surrounded by love', 'supported by', 'great friends',
-      'wonderful family', 'amazing people', 'feel loved by', 'care about me',
-      
-      // Forward-looking positivity
-      'excited about', 'looking forward', 'cant wait', 'eager to',
-      'optimistic about', 'hopeful about', 'confident about', 'ready for',
-      'bright future', 'good things coming', 'positive changes'
-    ];
-    
-    // Check if input contains strong positive indicators
-    const hasPositiveContent = positivePatterns.some(pattern => 
-      normalizedInput.includes(pattern)
-    );
-    
-    // If strongly positive, skip hindering detection entirely
-    if (hasPositiveContent) {
-      return false;
-    }
-    
-    // COMPREHENSIVE HINDERING PATTERNS - Bulletproof detection system
-    const hinderingPatterns = [
-      // ═══ CRITICAL: Direct suicidal ideation (HIGH CONFIDENCE) ═══
-      'kill myself', 'end my life', 'take my own life', 'commit suicide', 
-      'want to die', 'wish i was dead', 'better off dead', 'end it all',
-      'suicide', 'suicidal', 'want to disappear forever', 'cease to exist',
-      'should just disappear', 'should disappear', 'should just die',
-      'should kill myself', 'would be better if i died', 'ready to die',
-      'want to be dead', 'wish i could die', 'hope i die', 'need to die',
-      'going to kill myself', 'planning to die', 'done with life',
-      'thinking about suicide', 'considering suicide', 'want out of this life',
-      'dont want to live anymore', 'don\'t want to live anymore', 'dont want to live',
-      'feel like ending it all', 'ending it all', 'want to end everything',
-      
-      // ═══ CRITICAL: All "end it all" variations ═══
-      'end it all', 'end everything', 'end this all', 'just end it all',
-      'want to end it all', 'i want to end it all', 'want to just end it all',
-      'i want to just end it all', 'just want to end it all', 'wanna end it all',
-      'gonna end it all', 'going to end it all', 'ready to end it all',
-      'need to end it all', 'time to end it all', 'should end it all',
-      'have to end it all', 'might end it all', 'could end it all',
-      'feel like ending it all', 'thinking about ending it all',
-      'considering ending it all', 'planning to end it all',
-      
-      // ═══ CRITICAL: All "disappear" variations ═══
-      'want to disappear', 'wish i could disappear', 'want to just disappear',
-      'wish i could just disappear', 'should just disappear', 'need to disappear',
-      'going to disappear', 'gonna disappear', 'wanna disappear',
-      'feel like disappearing', 'thinking about disappearing',
-      'want to disappear forever', 'wish i could disappear forever',
-      'should disappear forever', 'vanish forever', 'fade away',
-      'invisible forever', 'gone forever', 'erased from existence',
-      
-      // ═══ CRITICAL: All "don't want to live" variations ═══
-      'dont want to live', 'don\'t want to live', 'do not want to live',
-      'dont want to live anymore', 'don\'t want to live anymore',
-      'do not want to live anymore', 'dont wanna live', 'don\'t wanna live',
-      'tired of living', 'sick of living', 'done with living',
-      'cant live like this', 'can\'t live like this', 'cannot live like this',
-      'dont want to be alive', 'don\'t want to be alive',
-      'wish i wasnt alive', 'wish i wasn\'t alive', 'wish i was never alive',
-      
-      // ═══ CRITICAL: Self-harm expressions (HIGH CONFIDENCE) ═══
-      'hurt myself', 'harm myself', 'cut myself', 'cutting myself',
-      'self harm', 'self-harm', 'want to cut', 'going to cut',
-      'thinking about cutting', 'need to cut', 'deserve to be hurt',
-      'should hurt myself', 'want to hurt myself', 'make myself bleed',
-      'punish myself', 'deserve pain', 'need to feel pain',
-      
-      // ═══ CRITICAL: Burden statements (HIGH CONFIDENCE) ═══
-      'everyone would be better off without me', 'better off without me',
-      'world would be better without me', 'wish i was never born',
-      'wish i never existed', 'shouldnt exist', 'regret being born',
-      'shouldve never been born', 'should have never been born',
-      'never should have been born', 'mistake to be born',
-      'shouldnt be here', 'don\'t belong here', 'dont belong here',
-      'nobody would miss me', 'no one would miss me', 'wouldnt be missed',
-      'nobody would care', 'no one would care', 'nobody cares',
-      'burden to everyone', 'waste of space', 'waste of life',
-      
-      // ═══ HIGH: Severe self-hatred (MEDIUM-HIGH CONFIDENCE) ═══
-      'hate myself', 'cant stand myself', 'despise myself', 'loathe myself',
-      'im worthless', 'im pathetic', 'im useless', 'waste of space',
-      'piece of shit', 'complete failure', 'broken beyond repair',
-      'fucking worthless', 'absolutely worthless', 'totally worthless',
-      'hate who i am', 'hate everything about myself', 'disgusted with myself',
-      'ashamed of myself', 'disappointed in myself', 'failed at everything',
-      
-      // ═══ HIGH: Severe hopelessness (MEDIUM-HIGH CONFIDENCE) ═══
-      'completely hopeless', 'no hope left', 'give up on life', 'giving up on life',
-      'cant go on living', 'cant take it anymore', 'had enough of life',
-      'done trying to live', 'tired of existing', 'game over for me',
-      'lost the battle with life', 'no point in living', 'pointless to live',
-      'nothing to live for', 'no reason to live', 'lost all hope',
-      'hope is gone', 'gave up hope', 'beyond help', 'cant be helped',
-      'no way out', 'trapped forever', 'stuck in hell', 'living hell',
-      
-      // ═══ HIGH: Crisis states (MEDIUM-HIGH CONFIDENCE) ═══
-      'mental breakdown', 'nervous breakdown', 'complete breakdown',
-      'falling apart completely', 'losing my mind', 'going insane',
-      'cant cope with life', 'drowning in pain', 'suffocating from pain',
-      'trapped in hell', 'living nightmare', 'want the pain to stop forever',
-      'cant handle this', 'cant take this', 'too much to handle',
-      'overwhelmed by life', 'crushed by life', 'destroyed by life',
-      'broken inside', 'shattered completely', 'empty inside',
-      
-      // ═══ MEDIUM: Severe distress requiring careful detection ═══
-      'make it all stop', 'stop the pain forever', 'escape this hell',
-      'cant handle this anymore', 'too much pain to bear',
-      'invisible to everyone', 'completely alone in this world',
-      'feel like dying', 'ready to give up', 'giving up on everything',
-      'whats the point', 'what\'s the point', 'no point anymore',
-      'why bother living', 'why continue living', 'why keep going',
-      'cant keep going', 'can\'t keep going', 'done fighting',
-      'tired of fighting', 'exhausted from living', 'drained of life'
-    ];
-    
-    // Helper function for typo tolerance
-    const getLevenshteinDistance = (str1: string, str2: string): number => {
-      const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-      
-      for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-      for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
-      
-      for (let j = 1; j <= str2.length; j++) {
-        for (let i = 1; i <= str1.length; i++) {
-          const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-          matrix[j][i] = Math.min(
-            matrix[j][i - 1] + 1, // deletion
-            matrix[j - 1][i] + 1, // insertion
-            matrix[j - 1][i - 1] + indicator // substitution
-          );
-        }
-      }
-      
-      return matrix[str2.length][str1.length];
-    };
-
-    // MULTI-LAYER DETECTION: Comprehensive matching with typo tolerance
-    const hasHinderingContent = hinderingPatterns.some(pattern => {
-      // Layer 1: Exact phrase match (most reliable)
-      if (normalizedInput.includes(pattern)) {
-        return true;
-      }
-      
-      // Layer 2: Typo-tolerant matching for critical patterns
-      const criticalKeywords = ['kill', 'suicide', 'die', 'dead', 'end', 'disappear', 'hurt', 'hate'];
-      const patternWords = pattern.split(' ');
-      const inputWords = normalizedInput.split(' ');
-      
-      // Check if pattern contains critical keywords
-      const hasCriticalWords = patternWords.some(word => 
-        criticalKeywords.some(critical => word.includes(critical))
-      );
-      
-      if (hasCriticalWords) {
-        let matchCount = 0;
-        let typoMatchCount = 0;
-        
-        patternWords.forEach(patternWord => {
-          // Exact word match
-          if (inputWords.includes(patternWord)) {
-            matchCount++;
-            return;
-          }
-          
-          // Common contractions and variations
-          const variations = [
-            patternWord.replace('cant', 'cannot').replace('can\'t', 'cannot'),
-            patternWord.replace('dont', 'do not').replace('don\'t', 'do not'),
-            patternWord.replace('im', 'i am').replace('i\'m', 'i am'),
-            patternWord.replace('wont', 'will not').replace('won\'t', 'will not'),
-            patternWord.replace('isnt', 'is not').replace('isn\'t', 'is not'),
-            patternWord.replace('wasnt', 'was not').replace('wasn\'t', 'was not'),
-            patternWord.replace('shouldnt', 'should not').replace('shouldn\'t', 'should not'),
-            patternWord.replace('wouldnt', 'would not').replace('wouldn\'t', 'would not'),
-            patternWord.replace('couldnt', 'could not').replace('couldn\'t', 'could not')
-          ];
-          
-          if (variations.some(variation => inputWords.includes(variation))) {
-            matchCount++;
-            return;
-          }
-          
-          // Typo tolerance: Check for similar words (1-2 character differences)
-          inputWords.forEach(inputWord => {
-            if (inputWord.length >= 3 && patternWord.length >= 3) {
-              const distance = getLevenshteinDistance(patternWord, inputWord);
-              const maxDistance = Math.floor(Math.max(patternWord.length, inputWord.length) * 0.25);
-              
-              if (distance <= maxDistance && distance <= 2) {
-                typoMatchCount++;
-              }
-            }
-          });
-        });
-        
-        // For critical patterns: require high word match percentage
-        const totalMatches = matchCount + Math.floor(typoMatchCount * 0.5); // Typos count as half
-        const matchPercentage = totalMatches / patternWords.length;
-        
-        if (matchPercentage >= 0.75) { // 75% word match required
-          return true;
-        }
-      }
-      
-      // Layer 3: Contextual detection for implied meanings
-      const contextualPatterns = [
-        // "end it" + "all" variations
-        { keywords: ['end', 'all'], weight: 0.8 },
-        { keywords: ['want', 'die'], weight: 0.9 },
-        { keywords: ['kill', 'myself'], weight: 1.0 },
-        { keywords: ['hate', 'myself'], weight: 0.7 },
-        { keywords: ['disappear', 'forever'], weight: 0.8 },
-        { keywords: ['better', 'without', 'me'], weight: 0.8 },
-        { keywords: ['tired', 'living'], weight: 0.7 },
-        { keywords: ['done', 'life'], weight: 0.8 },
-        { keywords: ['give', 'up'], weight: 0.6 },
-        { keywords: ['no', 'hope'], weight: 0.7 },
-        { keywords: ['cant', 'anymore'], weight: 0.7 },
-        { keywords: ['pain', 'stop'], weight: 0.6 }
-      ];
-      
-      for (const contextPattern of contextualPatterns) {
-        const foundKeywords = contextPattern.keywords.filter(keyword => 
-          inputWords.some(word => 
-            word.includes(keyword) || 
-            getLevenshteinDistance(keyword, word) <= 1
-          )
-        );
-        
-        const keywordMatchRatio = foundKeywords.length / contextPattern.keywords.length;
-        if (keywordMatchRatio >= contextPattern.weight) {
-          return true;
-        }
-      }
-      
-      return false;
-    });
-    
-    return hasHinderingContent;
-  };
-  
-  const isHinderingEntry = detectHinderingEntry();
 
   return (
     <View style={styles.content}>
@@ -457,10 +407,39 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
 
       {/* Main Message */}
       <View style={styles.messageContainer}>
-        <Text style={styles.messageText}>{cleanedMessage}</Text>
+        {/* TIER 2: Shortened message for elevated concern */}
+        {crisisLevel === 'elevated' ? (
+          <Text style={styles.messageText}>
+            {cleanedMessage.split('.').slice(0, 2).join('.') + (cleanedMessage.split('.').length > 2 ? '.' : '')}
+          </Text>
+        ) : (
+          <Text style={styles.messageText}>{cleanedMessage}</Text>
+        )}
         
-        {/* Support Resources for Hindering Entries */}
-        {isHinderingEntry && (
+        {/* TIER 2: Enhanced Crisis Resources for Elevated Concern */}
+        {crisisLevel === 'elevated' && (
+          <View style={styles.supportContainer}>
+            <View style={styles.supportDivider} />
+            <Text style={styles.supportEmoji}>🚨</Text>
+            <View style={styles.supportHeader}>
+              <Text style={styles.supportTitle}>We're here if you need extra support</Text>
+            </View>
+            <Text style={styles.supportMessage}>
+              It sounds like you're going through something really tough right now. That takes courage to share, and you don't have to face this alone.
+            </Text>
+            <TouchableOpacity 
+              style={[styles.supportButton, styles.elevatedSupportButton]}
+              onPress={() => setShowSupportModal(true)}
+            >
+              <Ionicons name="call" size={16} color="#fff" />
+              <Text style={[styles.supportButtonText, styles.elevatedSupportButtonText]}>Talk to someone now</Text>
+              <Ionicons name="chevron-forward" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* TIER 1: Support Resources for Hindering Entries */}
+        {isHinderingEntry && crisisLevel !== 'elevated' && (
           <View style={styles.supportContainer}>
             <View style={styles.supportDivider} />
             <Text style={styles.supportEmoji}>❤️‍🩹</Text>
@@ -569,6 +548,13 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* TIER 3: Crisis Intervention Modal */}
+      <CrisisModal
+        visible={showCrisisModal}
+        onClose={() => setShowCrisisModal(false)}
+        userRegion="US"
+      />
     </View>
   );
 };
@@ -744,6 +730,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginHorizontal: 8,
+  },
+  elevatedSupportButton: {
+    backgroundColor: '#EF5350',
+    borderColor: '#EF5350',
+  },
+  elevatedSupportButtonText: {
+    color: '#fff',
   },
   supportModalContent: {
     backgroundColor: '#1A1A1A',

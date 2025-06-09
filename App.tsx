@@ -1,12 +1,9 @@
 // Polyfill for useInsertionEffect to fix React 19 compatibility issues
 import React, { useState, useLayoutEffect, useEffect } from 'react';
 if (!React.useInsertionEffect) {
-  React.useInsertionEffect = (effect, deps) => {
-    // Use useEffect instead of useLayoutEffect to avoid timing issues
-    useEffect(() => {
-      return effect();
-    }, deps);
-  };
+  // For compatibility, map useInsertionEffect to useLayoutEffect
+  // This is safe since we're not doing DOM manipulations
+  React.useInsertionEffect = React.useLayoutEffect;
 }
 
 import { NavigationContainer } from '@react-navigation/native';
