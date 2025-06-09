@@ -55,6 +55,7 @@ type ArchetypeData = {
   quote: string;
   tags: string[];
   backgroundImage?: string; // AI-generated background URL
+  isHinderingEntry?: boolean; // Indicates if this was a hindering entry requiring extra care
 };
 
 type RootStackParamList = {

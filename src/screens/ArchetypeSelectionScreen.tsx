@@ -38,6 +38,7 @@ type ArchetypeData = {
   quote: string;
   tags: string[];
   backgroundImage?: string; // AI-generated background URL
+  isHinderingEntry?: boolean; // Indicates if this was a hindering entry requiring extra care
 };
 
 // Define archetype configurations
@@ -143,6 +144,7 @@ type RootStackParamList = {
       quote: string;
       tags: string[];
       backgroundImage?: string; // AI-generated background URL
+      isHinderingEntry?: boolean; // Indicates if this was a hindering entry requiring extra care
     };
     selectedArchetypeInSession?: string; // Track selected archetype for freemium locking
     archetypeResponses?: {[key: string]: ArchetypeData}; // Pass all responses for when user goes back
@@ -157,6 +159,7 @@ type RootStackParamList = {
       quote: string;
       tags: string[];
       backgroundImage?: string; // AI-generated background URL
+      isHinderingEntry?: boolean; // Indicates if this was a hindering entry requiring extra care
     };
   };
 };

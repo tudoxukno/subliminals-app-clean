@@ -24,6 +24,7 @@ type FullSubliminalContentProps = {
     fullMessage: string;
     quote: string;
     tags: string[];
+    isHinderingEntry?: boolean;
   };
 };
 
@@ -104,6 +105,29 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       <View style={styles.quoteContainer}>
         <Text style={styles.quoteText}>{archetypeData.quote}</Text>
       </View>
+
+      {/* Support Resources for Hindering Entries */}
+      {archetypeData.isHinderingEntry && (
+        <View style={styles.supportContainer}>
+          <View style={styles.supportHeader}>
+            <Ionicons name="heart" size={16} color="#4A90E2" />
+            <Text style={styles.supportTitle}>Additional Support</Text>
+          </View>
+          <Text style={styles.supportMessage}>
+            If you're going through a tough time, remember that professional support can make a real difference. You don't have to handle everything alone.
+          </Text>
+          <TouchableOpacity 
+            style={styles.supportButton}
+            onPress={() => {
+              // TODO: Open crisis/support resources modal or external links
+              console.log('Opening support resources...');
+            }}
+          >
+            <Ionicons name="open-outline" size={16} color="#4A90E2" />
+            <Text style={styles.supportButtonText}>Find Support Resources</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* User Input Modal */}
       <Modal
@@ -253,5 +277,43 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 8,
     textAlign: 'left',
+  },
+  supportContainer: {
+    marginTop: 32,
+    padding: 20,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#2B2B2B',
+  },
+  supportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  supportTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  supportMessage: {
+    color: '#666',
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  supportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#2B2B2B',
+    borderRadius: 8,
+  },
+  supportButtonText: {
+    color: '#4A90E2',
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 8,
   },
 }); 

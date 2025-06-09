@@ -8,6 +8,7 @@ export interface ArchetypeData {
   backgroundType?: string; // Type of background (dalle, gemini, contextual-color, etc.)
   styleIndex?: number;
   styleName?: string;
+  isHinderingEntry?: boolean; // Indicates if this was a hindering entry requiring extra care
 }
 
 export interface GenerateRequest {
