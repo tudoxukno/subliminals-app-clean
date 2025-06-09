@@ -304,10 +304,9 @@ const ArchetypeSelectionScreen = () => {
   const handleArchetypeSelect = (archetype: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    // Check if daily limit is reached - only applies when starting a completely NEW entry
-    // If user has existing responses OR a selected archetype, they're within an active session
-    const isWithinActiveSession = selectedArchetypeInSession || Object.keys(archetypeResponses).length > 0;
-    const isDailyLimitReached = isLimitReached && !canGenerate && !isWithinActiveSession;
+    // Check if daily limit is reached - only applies when starting a completely NEW entry (no selectedArchetypeInSession)
+    // If user has selectedArchetypeInSession, they're returning from a valid entry (1-3) and can access their selection
+    const isDailyLimitReached = isLimitReached && !canGenerate && !selectedArchetypeInSession;
     if (isDailyLimitReached) {
       // Reset banner state so it shows when user returns to home
       resetBannerForLimitAttempt();
@@ -407,10 +406,9 @@ const ArchetypeSelectionScreen = () => {
               const responseData = archetypeResponses[archetype];
               const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
               const isSelected = selectedArchetypeInSession === archetype;
-              // Daily limit state should only apply when starting a completely NEW entry
-              // If user has existing responses OR a selected archetype, they're within an active session
-              const isWithinActiveSession = selectedArchetypeInSession || Object.keys(archetypeResponses).length > 0;
-              const isDailyLimitReached = isLimitReached && !canGenerate && !isWithinActiveSession;
+              // Daily limit state should only apply when starting a completely NEW entry (no selectedArchetypeInSession)
+              // If user has selectedArchetypeInSession, they're returning from a valid entry (1-3) and can access their selection
+              const isDailyLimitReached = isLimitReached && !canGenerate && !selectedArchetypeInSession;
               
               return (
                 <TouchableOpacity
