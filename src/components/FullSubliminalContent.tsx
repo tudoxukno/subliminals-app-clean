@@ -131,7 +131,7 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       return true;
     }
     
-    // Method 3: Robust keyword detection from user input (fallback)
+    // Method 3: Enhanced keyword detection from user input (fallback)
     // Normalize input: lowercase, remove extra spaces/punctuation for better matching
     const normalizedInput = userInput
       .toLowerCase()
@@ -139,190 +139,150 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       .replace(/\s+/g, ' ') // Replace multiple spaces with single space
       .trim();
     
-              // ULTRA-COMPREHENSIVE keyword patterns - covering ALL expressions of distress
-     const hinderingPatterns = [
-       // ═══ CRITICAL: Direct suicidal ideation ═══
-       'kill myself', 'end my life', 'take my own life', 'commit suicide', 
-       'want to die', 'wish i was dead', 'better off dead', 'end it all',
-       'suicide', 'suicidal', 'dont want to be here', 'want to disappear',
-       'cease to exist', 'not exist anymore', 'kill me', 'die', 'dont want to wake up',
-       'wish i could just disappear', 'want the pain to stop forever',
-       'should just disappear', 'should disappear', 'should just die',
-       'should kill myself', 'would be better if i died', 'ready to die',
-       'want to be dead', 'wish i could die', 'hope i die', 'need to die',
-       'have to die', 'going to kill myself', 'planning to die',
-       'thinking about suicide', 'thinking of suicide', 'considering suicide',
-       'want out of this life', 'escape this life', 'done with life',
-       'finished with life', 'life is over for me', 'my time is up',
-       
-       // ═══ CRITICAL: Self-harm expressions ═══
-       'hurt myself', 'harm myself', 'cut myself', 'cutting myself',
-       'self harm', 'self-harm', 'punish myself', 'deserve pain',
-       'burn myself', 'blade', 'razor', 'cutting', 'slice myself',
-       'should hurt myself', 'want to hurt myself', 'need to cut',
-       'want to cut', 'going to cut', 'thinking about cutting',
-       'need to self harm', 'want to self harm', 'thinking of hurting myself',
-       'deserve to be hurt', 'should be punished', 'need punishment',
-       'inflict pain on myself', 'cause myself pain', 'make myself bleed',
-       
-       // ═══ CRITICAL: Burden & unworthiness statements ═══
-       'everyone would be better off without me', 'better off without me',
-       'im a burden', 'burden to everyone', 'world would be better without me',
-       'shouldnt exist', 'mistake that i exist', 'wish i was never born',
-       'wish i never existed', 'wish i didnt exist', 'regret being born',
-       'mistake being born', 'shouldnt be alive', 'dont deserve to live',
-       'everyone would be happier without me', 'drag everyone down',
-       'i shouldve never been born', 'i should have never been born',
-       'shouldve never been born', 'should have never been born',
-       'shouldnt have been born', 'never should have been born',
-       'never shouldve been born', 'wish i could disappear',
-       'wish i would disappear', 'shouldve never existed',
-       'should have never existed', 'shouldnt have existed',
-       
-       // ═══ HIGH: Self-hatred & worthlessness ═══
-       'hate myself', 'cant stand myself', 'cannot stand myself', 'despise myself',
-       'disgust myself', 'loathe myself', 'detest myself', 'abhor myself',
-       'im worthless', 'im pathetic', 'im useless', 'im nothing', 'im garbage', 
-       'im trash', 'im a failure', 'im disgusting', 'im horrible', 'im awful', 
-       'im terrible', 'im repulsive', 'im revolting', 'im hideous',
-       'worthless', 'pathetic', 'useless', 'failure', 'waste of space',
-       'piece of shit', 'piece of crap', 'good for nothing', 'im such a mess',
-       'i ruin everything', 'broken beyond repair', 'damaged goods',
-       'complete failure', 'total failure', 'fucking worthless', 'absolutely worthless',
-       
-       // ═══ HIGH: Disappearing & vanishing desires ═══
-       'want to vanish', 'should vanish', 'wish i could vanish',
-       'want to fade away', 'fade away', 'dissolve', 'evaporate',
-       'melt away', 'just disappear forever', 'want to be erased',
-       'erase myself', 'delete myself', 'remove myself from existence',
-       'wish i could just vanish', 'want to just disappear',
-       'should just vanish', 'need to disappear', 'have to disappear',
-       'want to be invisible', 'wish i was invisible', 'become invisible',
-       'wish i could fade', 'want to fade out', 'just fade away',
-       'want to dissolve', 'should dissolve', 'melt into nothing',
-       'cease to be', 'stop existing', 'no longer exist',
-       
-       // ═══ HIGH: Hopelessness & surrender ═══
-       'hopeless', 'no hope', 'no point', 'whats the point', 'why bother',
-       'give up', 'giving up', 'cant go on', 'cannot go on', 'cant take it',
-       'cant do this', 'its hopeless', 'nothing matters', 'done trying',
-       'had enough', 'at my limit', 'cant take anymore', 'im done',
-       'cant anymore', 'tired of fighting', 'tired of trying', 'surrender',
-       'throw in the towel', 'wave the white flag', 'lost the battle',
-       'game over', 'the end for me', 'no more fight left',
-       
-       // ═══ HIGH: Crisis & breakdown states ═══
-       'cant cope', 'cannot cope', 'falling apart', 'breaking down',
-       'broken', 'losing it', 'lost it', 'going crazy', 'going insane',
-       'cant handle', 'cannot handle', 'too much', 'overwhelmed',
-       'drowning', 'suffocating', 'cant breathe', 'trapped', 'stuck',
-       'mental breakdown', 'nervous breakdown', 'breakdown', 'crisis',
-       'in a dark hole', 'lost at sea', 'feel like im falling',
-       'spiraling out of control', 'losing my mind', 'going mad',
-       'cracking up', 'coming apart', 'unraveling', 'imploding',
-       
-       // ═══ MEDIUM: Depression & despair ═══
-       'depressed', 'depression', 'severely depressed', 'major depression',
-       'anxious', 'anxiety', 'panic', 'panic attack', 'panic attacks', 
-       'severely anxious', 'deeply sad', 'extremely sad', 'constantly sad',
-       'miserable', 'devastated', 'shattered', 'crushed', 'destroyed',
-       'in despair', 'despairing', 'anguish', 'tormented', 'tortured',
-       
-       // ═══ MEDIUM: Isolation & abandonment ═══
-       'all alone', 'completely alone', 'totally alone', 'utterly alone',
-       'nobody cares', 'no one cares', 'no one understands', 'isolated',
-       'lonely', 'abandoned', 'forgotten', 'invisible', 'nobody loves me', 
-       'unloved', 'no one loves me', 'everyone hates me', 'i dont matter',
-       'im invisible', 'feel invisible', 'feel forgotten', 'feel abandoned',
-       'cut off from everyone', 'disconnected', 'outcast', 'rejected',
-       
-       // ═══ MEDIUM: Emptiness & numbness ═══
-       'empty inside', 'feel nothing', 'numb', 'hollow', 'void',
-       'dead inside', 'emotionally dead', 'feel empty', 'empty',
-       'emotionally numb', 'feel hollow', 'feel vacant', 'soul is empty',
-       'heart is empty', 'nothing inside', 'blank inside', 'barren inside',
-       
-       // ═══ MEDIUM: Physical distress manifestations ═══
-       'chest tight', 'heart racing', 'shaking uncontrollably', 
-       'trembling', 'cant sleep', 'cannot sleep', 'exhausted',
-       'completely drained', 'physically weak', 'my heart is breaking',
-       'feel like im suffocating', 'feel sick all the time',
-       'body is giving up', 'physically falling apart',
-       
-       // ═══ MEDIUM: Cries for help ═══
-       'help me', 'save me', 'i need help', 'please help', 'someone help',
-       'make it stop', 'somebody help me', 'need help desperately',
-       'please make it stop', 'i need someone', 'rescue me',
-       'someone save me', 'get me out of this', 'cant do this alone',
-       
-       // ═══ MEDIUM: Existential crisis ═══
-       'life has no meaning', 'meaningless', 'pointless', 'why am i here',
-       'whats the point of living', 'why exist', 'no purpose',
-       'no reason to live', 'life is meaningless', 'existence is pointless',
-       'tired of existing', 'why do i even try', 'nothing i do matters',
-       'whats the point of anything', 'why was i born', 'life is empty',
-       'regret being alive', 'regret existing', 'hate that i exist',
-       'curse the day i was born', 'wish i was never created',
-       'sorry i was born', 'apologize for existing', 'burden of existence',
-       'existence is a mistake', 'my life is a mistake', 'i am a mistake',
-       
-       // ═══ MEDIUM: Despair questions ═══
-       'will it ever get better', 'when does the pain stop', 'does it get easier',
-       'will i ever be happy', 'when will this end', 'how much more can i take',
-       'why is life so hard', 'what did i do to deserve this',
-       'will the pain ever end', 'is there any hope', 'will i ever heal',
-       'does anyone care if i live or die', 'would anyone miss me',
-       
-       // ═══ MEDIUM: Self-blame & guilt ═══
-       'i deserve this pain', 'i deserve to suffer', 'this is what i deserve',
-       'im getting what i deserve', 'i brought this on myself',
-       'its all my fault', 'everything is my fault', 'i deserve nothing good',
-       'i deserve to be punished', 'this is my punishment',
-       
-       // ═══ MEDIUM: Emotional metaphors ═══
-       'drowning in sorrow', 'lost in darkness', 'buried alive',
-       'trapped in hell', 'living nightmare', 'walking dead',
-       'ghost of myself', 'shadow of who i was', 'shell of a person',
-       'hanging by a thread', 'at the edge', 'about to break',
-       'crumbling', 'withering away', 'fading away', 'disappearing',
-       
-       // ═══ LOW: Concerning but less severe ═══
-       'so tired', 'exhausted from life', 'worn down', 'beaten down',
-       'defeated', 'lost', 'confused', 'scared', 'terrified',
-       'cant find my way', 'dont know what to do', 'lost hope',
-       'giving up hope', 'losing hope', 'hope is gone'
-     ];
+    // POSITIVE FILTERING: First check if the message is clearly positive
+    // If it contains strong positive indicators, skip hindering detection
+    const positivePatterns = [
+      // Strong positive emotions
+      'feel great', 'feeling great', 'feel amazing', 'feeling amazing', 
+      'feel wonderful', 'feeling wonderful', 'feel fantastic', 'feeling fantastic',
+      'feel good', 'feeling good', 'feel better', 'feeling better',
+      'feel happy', 'feeling happy', 'feel joyful', 'feeling joyful',
+      'feel blessed', 'feeling blessed', 'feel grateful', 'feeling grateful',
+      'feel thankful', 'feeling thankful', 'feel positive', 'feeling positive',
+      'feel optimistic', 'feeling optimistic', 'feel hopeful', 'feeling hopeful',
+      'feel confident', 'feeling confident', 'feel strong', 'feeling strong',
+      'feel proud', 'feeling proud', 'feel accomplished', 'feeling accomplished',
+      'feel successful', 'feeling successful', 'feel fulfilled', 'feeling fulfilled',
+      'feel content', 'feeling content', 'feel peaceful', 'feeling peaceful',
+      'feel calm', 'feeling calm', 'feel relaxed', 'feeling relaxed',
+      'feel energized', 'feeling energized', 'feel motivated', 'feeling motivated',
+      'feel inspired', 'feeling inspired', 'feel excited', 'feeling excited',
+      'feel ready', 'feeling ready', 'feel prepared', 'feeling prepared',
+      'feel supported', 'feeling supported', 'feel loved', 'feeling loved',
+      'feel appreciated', 'feeling appreciated', 'feel valued', 'feeling valued',
+      
+      // Positive growth & connection
+      'feel connected', 'feeling connected', 'feel like im growing', 'feeling like im growing',
+      'feel progress', 'feeling progress', 'making progress', 'growing stronger',
+      'getting better', 'improving', 'healing', 'recovered', 'recovering',
+      'feel centered', 'feeling centered', 'feel balanced', 'feeling balanced',
+      'feel at peace', 'feeling at peace', 'feel whole', 'feeling whole',
+      
+      // Positive activities & states
+      'had a good day', 'having a good day', 'great day', 'wonderful day',
+      'things are good', 'things are great', 'life is good', 'life is great',
+      'things are looking up', 'turning around', 'getting back on track',
+      'feeling myself again', 'back to myself', 'like myself again',
+      
+      // Achievement & accomplishment
+      'proud of myself', 'accomplished something', 'achieved', 'succeeded',
+      'won', 'victory', 'breakthrough', 'milestone', 'celebration',
+      'grateful for', 'thankful for', 'blessed with', 'appreciate',
+      
+      // Positive relationships
+      'love my', 'surrounded by love', 'supported by', 'great friends',
+      'wonderful family', 'amazing people', 'feel loved by', 'care about me',
+      
+      // Forward-looking positivity
+      'excited about', 'looking forward', 'cant wait', 'eager to',
+      'optimistic about', 'hopeful about', 'confident about', 'ready for',
+      'bright future', 'good things coming', 'positive changes'
+    ];
     
-    // Enhanced matching: Check for any pattern match with flexible word boundaries
-    return hinderingPatterns.some(pattern => {
-      // Direct substring match (most reliable)
+    // Check if input contains strong positive indicators
+    const hasPositiveContent = positivePatterns.some(pattern => 
+      normalizedInput.includes(pattern)
+    );
+    
+    // If strongly positive, skip hindering detection entirely
+    if (hasPositiveContent) {
+      return false;
+    }
+    
+    // REFINED HINDERING PATTERNS - More precise, focused on severe distress
+    const hinderingPatterns = [
+      // ═══ CRITICAL: Direct suicidal ideation (HIGH CONFIDENCE) ═══
+      'kill myself', 'end my life', 'take my own life', 'commit suicide', 
+      'want to die', 'wish i was dead', 'better off dead', 'end it all',
+      'suicide', 'suicidal', 'want to disappear forever', 'cease to exist',
+      'should just disappear', 'should disappear', 'should just die',
+      'should kill myself', 'would be better if i died', 'ready to die',
+      'want to be dead', 'wish i could die', 'hope i die', 'need to die',
+      'going to kill myself', 'planning to die', 'done with life',
+      'thinking about suicide', 'considering suicide', 'want out of this life',
+      
+      // ═══ CRITICAL: Self-harm expressions (HIGH CONFIDENCE) ═══
+      'hurt myself', 'harm myself', 'cut myself', 'cutting myself',
+      'self harm', 'self-harm', 'want to cut', 'going to cut',
+      'thinking about cutting', 'need to cut', 'deserve to be hurt',
+      'should hurt myself', 'want to hurt myself', 'make myself bleed',
+      
+      // ═══ CRITICAL: Burden statements (HIGH CONFIDENCE) ═══
+      'everyone would be better off without me', 'better off without me',
+      'world would be better without me', 'wish i was never born',
+      'wish i never existed', 'shouldnt exist', 'regret being born',
+      'shouldve never been born', 'should have never been born',
+      'never should have been born', 'wish i could disappear',
+      
+      // ═══ HIGH: Severe self-hatred (MEDIUM-HIGH CONFIDENCE) ═══
+      'hate myself', 'cant stand myself', 'despise myself', 'loathe myself',
+      'im worthless', 'im pathetic', 'im useless', 'waste of space',
+      'piece of shit', 'complete failure', 'broken beyond repair',
+      'fucking worthless', 'absolutely worthless',
+      
+      // ═══ HIGH: Severe hopelessness (MEDIUM-HIGH CONFIDENCE) ═══
+      'completely hopeless', 'no hope left', 'give up on life', 'giving up on life',
+      'cant go on living', 'cant take it anymore', 'had enough of life',
+      'done trying to live', 'tired of existing', 'game over for me',
+      'lost the battle with life', 'no point in living',
+      
+      // ═══ HIGH: Crisis states (MEDIUM-HIGH CONFIDENCE) ═══
+      'mental breakdown', 'nervous breakdown', 'complete breakdown',
+      'falling apart completely', 'losing my mind', 'going insane',
+      'cant cope with life', 'drowning in pain', 'suffocating from pain',
+      'trapped in hell', 'living nightmare', 'want the pain to stop forever',
+      
+      // ═══ MEDIUM: Severe distress requiring careful detection ═══
+      'i just want to end it all', 'want to end it all', 'end everything',
+      'make it all stop', 'stop the pain forever', 'escape this hell',
+      'cant handle this anymore', 'too much pain to bear',
+      'nobody would miss me', 'no one would care if i died',
+      'invisible to everyone', 'completely alone in this world',
+      'feel like dying', 'wish i could just disappear forever'
+    ];
+    
+    // PRECISE MATCHING: Require exact phrase matches for reliability
+    const hasHinderingContent = hinderingPatterns.some(pattern => {
+      // Check for exact phrase match (most reliable)
       if (normalizedInput.includes(pattern)) {
         return true;
       }
       
-      // Word boundary matching for shorter patterns (to avoid false positives)
-      if (pattern.length <= 8) {
-        const words = normalizedInput.split(' ');
-        return words.some(word => word === pattern || word.includes(pattern));
-      }
-      
-      // Fuzzy matching for variations (handle typos, contractions)
-      const patternWords = pattern.split(' ');
-      if (patternWords.length > 1) {
-        // For multi-word patterns, check if most words are present
-        const matchCount = patternWords.filter(word => 
-          normalizedInput.includes(word) || 
-          normalizedInput.includes(word.replace('cant', 'cannot')) ||
-          normalizedInput.includes(word.replace('im', 'i am')) ||
-          normalizedInput.includes(word.replace('its', 'it is')) ||
-          normalizedInput.includes(word.replace('whats', 'what is')) ||
-          normalizedInput.includes(word.replace('dont', 'do not'))
-        ).length;
-        return matchCount >= Math.ceil(patternWords.length * 0.7); // 70% of words must match
+      // For critical patterns, also try word-by-word matching with high threshold
+      if (pattern.includes('kill myself') || pattern.includes('end my life') || 
+          pattern.includes('suicide') || pattern.includes('want to die')) {
+        const patternWords = pattern.split(' ');
+        const inputWords = normalizedInput.split(' ');
+        let matchCount = 0;
+        
+        patternWords.forEach(word => {
+          if (inputWords.includes(word) || 
+              inputWords.includes(word.replace('cant', 'cannot')) ||
+              inputWords.includes(word.replace('im', 'i am'))) {
+            matchCount++;
+          }
+        });
+        
+        // Require 80% word match for critical patterns
+        if (matchCount >= Math.ceil(patternWords.length * 0.8)) {
+          return true;
+        }
       }
       
       return false;
     });
+    
+    return hasHinderingContent;
   };
   
   const isHinderingEntry = detectHinderingEntry();
