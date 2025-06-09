@@ -130,6 +130,7 @@ type RootStackParamList = {
   ArchetypeSelection: { 
     userInput: string; 
     selectedArchetypeInSession?: string; // Track which archetype was selected for freemium locking
+    archetypeResponses?: {[key: string]: ArchetypeData}; // Preserve generated responses
   };
   FullSubliminalView: { 
     userInput: string;
@@ -143,6 +144,7 @@ type RootStackParamList = {
       backgroundImage?: string; // AI-generated background URL
     };
     selectedArchetypeInSession?: string; // Track selected archetype for freemium locking
+    archetypeResponses?: {[key: string]: ArchetypeData}; // Pass all responses for when user goes back
   };
   ShareSuite: {
     userInput: string;
@@ -164,12 +166,12 @@ type RoutePropType = RouteProp<RootStackParamList, 'ArchetypeSelection'>;
 const ArchetypeSelectionScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
-  const { userInput, selectedArchetypeInSession } = route.params;
+  const { userInput, selectedArchetypeInSession, archetypeResponses: passedArchetypeResponses } = route.params;
   const { incrementUsage, canGenerate, isLimitReached, resetBannerForLimitAttempt, checkAndShowBannerOnHomeReturn } = useDailyUsage();
   const scrollViewRef = useRef<ScrollView>(null);
   const [loadingArchetype, setLoadingArchetype] = useState<string | null>(null);
-  const [archetypeResponses, setArchetypeResponses] = useState<{[key: string]: ArchetypeData}>({});
-  const [isGeneratingPreviews, setIsGeneratingPreviews] = useState(true);
+  const [archetypeResponses, setArchetypeResponses] = useState<{[key: string]: ArchetypeData}>(passedArchetypeResponses || {});
+  const [isGeneratingPreviews, setIsGeneratingPreviews] = useState(!passedArchetypeResponses || Object.keys(passedArchetypeResponses).length === 0);
   const [showUserInputModal, setShowUserInputModal] = useState(false);
   const [backgroundsLoading, setBackgroundsLoading] = useState<{[key: string]: boolean}>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -227,6 +229,12 @@ const ArchetypeSelectionScreen = () => {
   // Generate preview content for all archetypes when screen loads (fast text-only)
   useEffect(() => {
     const generatePreviews = async () => {
+      // Check if we already have previews for this user input - if so, don't regenerate
+      if (Object.keys(archetypeResponses).length > 0) {
+        console.log('🔄 Previews already exist for this session, skipping regeneration');
+        return;
+      }
+
       // Always generate real previews, regardless of daily limit status
       // The UI will handle the clickability and styling based on limit state
 
@@ -290,7 +298,7 @@ const ArchetypeSelectionScreen = () => {
     };
 
     generatePreviews();
-  }, [userInput, canGenerate]);
+  }, [userInput]);
 
   const handleGoBack = () => {
     // Trigger banner check when returning to home
@@ -342,6 +350,8 @@ const ArchetypeSelectionScreen = () => {
         archetypeData,
         // Track this archetype as selected for the session
         selectedArchetypeInSession: selectedArchetypeInSession || archetype,
+        // Pass all archetype responses so they can be preserved when user goes back
+        archetypeResponses,
       });
     }
   };
@@ -419,6 +429,12 @@ const ArchetypeSelectionScreen = () => {
                   activeOpacity={isLocked || isDailyLimitReached ? 1 : 0.7}
                 >
                   <View style={styles.cardContent}>
+                    {/* Lock icon in top right corner */}
+                    {isLocked && !isDailyLimitReached && (
+                      <View style={styles.topRightLockIcon}>
+                        <Ionicons name="lock-closed" size={18} color="#666" />
+                      </View>
+                    )}
                     <View style={styles.cardHeader}>
                       <Text style={[
                         styles.cardIcon, 
@@ -487,18 +503,34 @@ const ArchetypeSelectionScreen = () => {
                           >
                             <Text style={styles.upgradeButtonText}>UPGRADE</Text>
                           </TouchableOpacity>
-                        ) : isLocked ? (
-                          <Ionicons name="lock-closed" size={20} color="#666" />
-                        ) : (
+                        ) : !isLocked ? (
                           <Ionicons name="chevron-forward" size={20} color="#666" />
-                        )}
+                        ) : null}
                       </View>
                     </View>
                   </View>
                   {isLocked && !isDailyLimitReached && (
-                    <View style={styles.lockOverlay}>
-                      <Text style={styles.lockText}>Upgrade to unlock all voices</Text>
-                    </View>
+                    <TouchableOpacity 
+                      style={styles.lockOverlay}
+                      onPress={() => {
+                        setUpgradeModalTrigger('archetype_switching');
+                        setShowUpgradeModal(true);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#4A90E2', '#5BA0F2', '#4A90E2']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.lockGradientBackground}
+                      >
+                        <View style={styles.lockCtaContainer}>
+                          <Ionicons name="diamond" size={16} color="#FFFFFF" />
+                          <Text style={styles.lockText}>Upgrade to unlock all voices</Text>
+                          <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
                   )}
                 </TouchableOpacity>
               );
@@ -629,6 +661,13 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     padding: 16,
+    position: 'relative',
+  },
+  topRightLockIcon: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 1,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -786,17 +825,30 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+    overflow: 'hidden',
+    zIndex: 10,
+  },
+  lockGradientBackground: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  lockCtaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   lockText: {
-    color: '#999',
-    fontSize: 12,
+    color: '#FFFFFF',
+    fontSize: 14,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   // Daily limit reached styles
   limitReachedCard: {

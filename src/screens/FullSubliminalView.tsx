@@ -47,36 +47,33 @@ const THRESHOLDS = {
   TOP_THRESHOLD: 50, // Distance from top to consider "at top" for hint re-appearance
 };
 
+type ArchetypeData = {
+  icon: string;
+  response: string;
+  fullMessage: string;
+  quote: string;
+  tags: string[];
+  backgroundImage?: string; // AI-generated background URL
+};
+
 type RootStackParamList = {
   Home: undefined;
   ArchetypeSelection: { 
     userInput: string; 
     selectedArchetypeInSession?: string; 
+    archetypeResponses?: {[key: string]: ArchetypeData}; // Preserve generated responses
   };
   FullSubliminalView: {
     userInput: string;
     selectedArchetype: string;
-    archetypeData: {
-      icon: string;
-      response: string;
-      fullMessage: string;
-      quote: string;
-      tags: string[];
-      backgroundImage?: string; // AI-generated background URL
-    };
+    archetypeData: ArchetypeData;
     selectedArchetypeInSession?: string;
+    archetypeResponses?: {[key: string]: ArchetypeData}; // Pass all responses for when user goes back
   };
   ShareSuite: {
     userInput: string;
     selectedArchetype: string;
-    archetypeData: {
-      icon: string;
-      response: string;
-      fullMessage: string;
-      quote: string;
-      tags: string[];
-      backgroundImage?: string; // AI-generated background URL
-    };
+    archetypeData: ArchetypeData;
     selectedArchetypeInSession?: string;
   };
 };
@@ -87,7 +84,7 @@ type RoutePropType = RouteProp<RootStackParamList, 'FullSubliminalView'>;
 const FullSubliminalView = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
-  const { userInput, selectedArchetype, archetypeData, selectedArchetypeInSession } = route.params;
+  const { userInput, selectedArchetype, archetypeData, selectedArchetypeInSession, archetypeResponses } = route.params;
   const [showButtons, setShowButtons] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -317,11 +314,12 @@ const FullSubliminalView = () => {
     });
   };
 
-  // Custom back handler to pass selectedArchetypeInSession back to ArchetypeSelection
+  // Custom back handler to pass selectedArchetypeInSession and archetypeResponses back to ArchetypeSelection
   const handleGoBack = () => {
     navigation.navigate('ArchetypeSelection', {
       userInput,
       selectedArchetypeInSession,
+      archetypeResponses, // Pass back the archetype responses to preserve them
     });
   };
 
