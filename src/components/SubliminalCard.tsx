@@ -43,6 +43,13 @@ type SubliminalCardProps = {
   onLayout?: (height: number) => void; // Add callback for height changes
 };
 
+// Helper function to clean the main message by removing appended support text
+const cleanMainMessage = (message: string): string => {
+  // Remove the appended support message if it exists
+  const supportMessagePattern = /\s*💬\s*If things feel overwhelming.*$/;
+  return message.replace(supportMessagePattern, '').trim();
+};
+
 export const SubliminalCard: React.FC<SubliminalCardProps> = ({
   userInput,
   selectedArchetype,
@@ -117,7 +124,7 @@ export const SubliminalCard: React.FC<SubliminalCardProps> = ({
         {/* Content Container */}
         <View style={styles.contentContainer}>
           {/* Main Message */}
-          <Text style={styles.message}>{archetypeData.fullMessage}</Text>
+          <Text style={styles.message}>{cleanMainMessage(archetypeData.fullMessage)}</Text>
           
           {/* Divider */}
           <View style={styles.divider} />

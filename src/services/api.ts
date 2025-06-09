@@ -13,6 +13,7 @@ export interface ArchetypeData {
   quote: string;
   tags: string[];
   backgroundImage?: string;
+  isHinderingEntry?: boolean;
 }
 
 export interface GenerateResponse {

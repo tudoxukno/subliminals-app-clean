@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  Linking,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { 
@@ -28,6 +30,34 @@ type FullSubliminalContentProps = {
   };
 };
 
+const CRISIS_RESOURCES = [
+  {
+    name: "988 Suicide & Crisis Lifeline",
+    number: "988",
+    description: "24/7, free and confidential support"
+  },
+  {
+    name: "Crisis Text Line",
+    number: "741741",
+    description: "Text HOME for 24/7 crisis support"
+  },
+  {
+    name: "SAMHSA National Helpline",
+    number: "1-800-662-4357",
+    description: "Mental health and substance abuse"
+  },
+  {
+    name: "Mental Health America",
+    url: "https://www.mhanational.org/finding-help",
+    description: "Find local mental health resources"
+  },
+  {
+    name: "Psychology Today",
+    url: "https://www.psychologytoday.com/us/therapists",
+    description: "Find therapists and mental health professionals"
+  }
+];
+
 export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
   userInput,
   selectedArchetype,
@@ -38,6 +68,14 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
     PlayfairDisplay_500Medium_Italic,
   });
   const [showUserInputModal, setShowUserInputModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+
+  // Helper function to clean the main message by removing appended support text
+  const cleanMainMessage = (fullMessage: string): string => {
+    // Remove the appended support message to create visual separation
+    const supportMessagePattern = /\s*💬 If things feel overwhelming, talking to someone can really help\. You're not alone\./;
+    return fullMessage.replace(supportMessagePattern, '').trim();
+  };
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 3): { truncated: string; needsTruncation: boolean } => {
@@ -53,14 +91,31 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
     return { truncated, needsTruncation: true };
   };
 
+  const handleSupportResourcePress = async (resource: typeof CRISIS_RESOURCES[0]) => {
+    if (resource.number) {
+      const phoneUrl = `tel:${resource.number}`;
+      try {
+        await Linking.openURL(phoneUrl);
+      } catch (error) {
+        Alert.alert('Unable to make call', 'Please dial ' + resource.number + ' manually.');
+      }
+    } else if (resource.url) {
+      try {
+        await Linking.openURL(resource.url);
+      } catch (error) {
+        Alert.alert('Unable to open link', 'Please visit ' + resource.url + ' in your browser.');
+      }
+    }
+  };
+
   const { truncated: displayUserInput, needsTruncation } = truncateUserInput(userInput);
 
   if (!fontsLoaded) {
     return null;
   }
 
-  // Use fullMessage for the complete content
-  const fullText = archetypeData.fullMessage || archetypeData.response;
+  // Use cleaned fullMessage for the main content
+  const cleanedMessage = cleanMainMessage(archetypeData.fullMessage || archetypeData.response);
 
   return (
     <View style={styles.content}>
@@ -95,39 +150,93 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
 
       {/* Main Message */}
       <View style={styles.messageContainer}>
-        <Text style={styles.messageText}>{fullText}</Text>
+        <Text style={styles.messageText}>{cleanedMessage}</Text>
+        
+        {/* Support Resources for Hindering Entries */}
+        {archetypeData.isHinderingEntry && (
+          <View style={styles.supportContainer}>
+            <View style={styles.supportDivider} />
+            <Text style={styles.supportEmoji}>❤️‍🩹</Text>
+            <View style={styles.supportHeader}>
+              <Text style={styles.supportTitle}>You Don't Have to Face This Alone</Text>
+            </View>
+            <Text style={styles.supportMessage}>
+              Professional support can make a real difference. Here are some resources available 24/7:
+            </Text>
+            <TouchableOpacity 
+              style={styles.supportButton}
+              onPress={() => setShowSupportModal(true)}
+            >
+              <Ionicons name="call" size={16} color="#7B9BFF" />
+              <Text style={styles.supportButtonText}>Crisis Support & Resources</Text>
+              <Ionicons name="chevron-forward" size={16} color="#7B9BFF" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Divider */}
       <View style={styles.divider} />
 
-      {/* Quote */}
+            {/* Quote */}
       <View style={styles.quoteContainer}>
         <Text style={styles.quoteText}>{archetypeData.quote}</Text>
       </View>
 
-      {/* Support Resources for Hindering Entries */}
-      {archetypeData.isHinderingEntry && (
-        <View style={styles.supportContainer}>
-          <View style={styles.supportHeader}>
-            <Ionicons name="heart" size={16} color="#4A90E2" />
-            <Text style={styles.supportTitle}>Additional Support</Text>
+      {/* Support Resources Modal */}
+      <Modal
+        visible={showSupportModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSupportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.supportModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Crisis Support & Resources</Text>
+              <TouchableOpacity 
+                onPress={() => setShowSupportModal(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScrollView}>
+              <Text style={styles.modalSubtitle}>
+                If you're in immediate danger, please call 911 or go to your nearest emergency room.
+              </Text>
+              
+              {CRISIS_RESOURCES.map((resource, index) => (
+                <TouchableOpacity 
+                  key={index}
+                  style={styles.resourceItem}
+                  onPress={() => handleSupportResourcePress(resource)}
+                >
+                  <View style={styles.resourceContent}>
+                    <View style={styles.resourceHeader}>
+                      <Ionicons 
+                        name={resource.number ? "call" : "open"} 
+                        size={20} 
+                        color="#7B9BFF" 
+                      />
+                      <Text style={styles.resourceName}>{resource.name}</Text>
+                    </View>
+                    <Text style={styles.resourceDescription}>{resource.description}</Text>
+                    {resource.number && (
+                      <Text style={styles.resourceNumber}>{resource.number}</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#666" />
+                </TouchableOpacity>
+              ))}
+              
+              <Text style={styles.modalFooter}>
+                Remember: Seeking help is a sign of strength, not weakness. You deserve support and care.
+              </Text>
+            </ScrollView>
           </View>
-          <Text style={styles.supportMessage}>
-            If you're going through a tough time, remember that professional support can make a real difference. You don't have to handle everything alone.
-          </Text>
-          <TouchableOpacity 
-            style={styles.supportButton}
-            onPress={() => {
-              // TODO: Open crisis/support resources modal or external links
-              console.log('Opening support resources...');
-            }}
-          >
-            <Ionicons name="open-outline" size={16} color="#4A90E2" />
-            <Text style={styles.supportButtonText}>Find Support Resources</Text>
-          </TouchableOpacity>
         </View>
-      )}
+      </Modal>
 
       {/* User Input Modal */}
       <Modal
@@ -286,34 +395,108 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2B2B2B',
   },
+  supportDivider: {
+    height: 1,
+    backgroundColor: '#2B2B2B',
+    marginVertical: 16,
+  },
   supportHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  supportEmoji: {
+    fontSize: 24,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   supportTitle: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
-    marginLeft: 8,
+    textAlign: 'center',
   },
   supportMessage: {
     color: '#666',
     fontSize: 13,
     lineHeight: 20,
     marginBottom: 16,
+    textAlign: 'center',
   },
   supportButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    justifyContent: 'center',
     backgroundColor: '#2B2B2B',
-    borderRadius: 8,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#7B9BFF',
   },
   supportButtonText: {
-    color: '#4A90E2',
-    fontSize: 13,
+    color: '#7B9BFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginHorizontal: 8,
+  },
+  supportModalContent: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '70%',
+    borderWidth: 1,
+    borderColor: '#2B2B2B',
+  },
+  modalSubtitle: {
+    color: '#fff',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 24,
+    textAlign: 'center',
     fontWeight: '500',
-    marginLeft: 8,
+  },
+  resourceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#2B2B2B',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  resourceContent: {
+    flex: 1,
+  },
+  resourceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  resourceName: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
+    flex: 1,
+  },
+  resourceDescription: {
+    color: '#999',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  resourceNumber: {
+    color: '#7B9BFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalFooter: {
+    color: '#999',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: 24,
+    fontStyle: 'italic',
   },
 }); 

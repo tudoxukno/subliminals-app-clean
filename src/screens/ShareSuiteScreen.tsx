@@ -37,6 +37,13 @@ import { ScrollHint } from '../components/ScrollHint';
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
 
+// Helper function to clean the main message by removing appended support text
+const cleanMainMessage = (message: string): string => {
+  // Remove the appended support message if it exists
+  const supportMessagePattern = /\s*💬\s*If things feel overwhelming.*$/;
+  return message.replace(supportMessagePattern, '').trim();
+};
+
 type RootStackParamList = {
   ShareSuite: {
     userInput: string;
@@ -132,7 +139,9 @@ const ShareSuiteScreen = () => {
     if (viewMode === 'QUOTE_ONLY') {
       return `"${archetypeData.quote}" - ${selectedArchetype} | Subliminals`;
     }
-    return `"${userInput}"\n\n${archetypeData.fullMessage}\n\n"${archetypeData.quote}"\n\n- ${selectedArchetype} | Subliminals`;
+    // Use cleaned message to ensure no support resources appear in shared content
+    const cleanedMessage = cleanMainMessage(archetypeData.fullMessage);
+    return `"${userInput}"\n\n${cleanedMessage}\n\n"${archetypeData.quote}"\n\n- ${selectedArchetype} | Subliminals`;
   };
 
   // Calculate if scrolling is needed based on actual screen dimensions
