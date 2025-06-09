@@ -25,6 +25,8 @@ import {
   PlayfairDisplay_500Medium_Italic,
 } from '@expo-google-fonts/playfair-display';
 import { saveSubliminal, isSubliminalSaved } from '../utils/storage';
+import subscriptionService from '../services/subscriptionService';
+import { UpgradeModal } from '../components/UpgradeModal';
 import { FullSubliminalContent } from '../components/FullSubliminalContent';
 import { BackButton } from '../components/BackButton';
 import { ScrollHint } from '../components/ScrollHint';
@@ -100,6 +102,7 @@ const FullSubliminalView = () => {
   // Single animated value to control the entire transition
   const saveTransitionAnim = useRef(new Animated.Value(0)).current;
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_500Medium,
@@ -303,12 +306,26 @@ const FullSubliminalView = () => {
     
     try {
       if (!isSaved) {
+        // Check save limit for free users before saving
+        const saveCheck = await subscriptionService.canSave();
+        
+        if (!saveCheck.canSave) {
+          // Show upgrade modal for free users who hit the limit
+          setIsTransitioning(false);
+          setShowUpgradeModal(true);
+          return;
+        }
+        
         // Save the subliminal
         await saveSubliminal({
           userInput,
           selectedArchetype,
           archetypeData,
         });
+        
+        // Log save status for debugging
+        const saveStatus = await subscriptionService.getSaveStatus();
+        console.log('💾 Subliminal saved. Current status:', saveStatus);
       }
       // Note: We'll implement unsave functionality later
 
@@ -528,6 +545,15 @@ const FullSubliminalView = () => {
           </View>
         </Animated.View>
       </SafeAreaView>
+
+      {/* Save Limit Upgrade Modal */}
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        trigger="save_limit"
+        userInput={userInput}
+        archetypeName={selectedArchetype}
+      />
     </LinearGradient>
   );
 };

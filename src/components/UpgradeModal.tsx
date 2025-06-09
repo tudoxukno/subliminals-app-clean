@@ -17,7 +17,7 @@ import subscriptionService, { SubscriptionTier } from '../services/subscriptionS
 interface UpgradeModalProps {
   visible: boolean;
   onClose: () => void;
-  trigger: 'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds' | 'unlimited_saves';
+  trigger: 'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds' | 'unlimited_saves' | 'save_limit';
   userInput?: string; // Context for better messaging
   archetypeName?: string; // Which archetype triggered this
 }
@@ -52,6 +52,12 @@ const TRIGGER_MESSAGES = {
     subtitle: 'Save as many subliminals as you want',
     description: 'Never lose your favorite reflections. Premium subscribers get unlimited saves with cloud sync.',
     icon: '☁️',
+  },
+  save_limit: {
+    title: 'Save Limit Reached',
+    subtitle: 'You\'ve saved 10 subliminals (free limit)',
+    description: 'Upgrade to Premium for unlimited saves with cloud sync, or clear some saves in Settings to continue.',
+    icon: '💾',
   },
 };
 

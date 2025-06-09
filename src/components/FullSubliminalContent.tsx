@@ -199,7 +199,7 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       return false;
     }
     
-    // REFINED HINDERING PATTERNS - More precise, focused on severe distress
+    // COMPREHENSIVE HINDERING PATTERNS - Bulletproof detection system
     const hinderingPatterns = [
       // ═══ CRITICAL: Direct suicidal ideation (HIGH CONFIDENCE) ═══
       'kill myself', 'end my life', 'take my own life', 'commit suicide', 
@@ -210,71 +210,208 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       'want to be dead', 'wish i could die', 'hope i die', 'need to die',
       'going to kill myself', 'planning to die', 'done with life',
       'thinking about suicide', 'considering suicide', 'want out of this life',
+      'dont want to live anymore', 'don\'t want to live anymore', 'dont want to live',
+      'feel like ending it all', 'ending it all', 'want to end everything',
+      
+      // ═══ CRITICAL: All "end it all" variations ═══
+      'end it all', 'end everything', 'end this all', 'just end it all',
+      'want to end it all', 'i want to end it all', 'want to just end it all',
+      'i want to just end it all', 'just want to end it all', 'wanna end it all',
+      'gonna end it all', 'going to end it all', 'ready to end it all',
+      'need to end it all', 'time to end it all', 'should end it all',
+      'have to end it all', 'might end it all', 'could end it all',
+      'feel like ending it all', 'thinking about ending it all',
+      'considering ending it all', 'planning to end it all',
+      
+      // ═══ CRITICAL: All "disappear" variations ═══
+      'want to disappear', 'wish i could disappear', 'want to just disappear',
+      'wish i could just disappear', 'should just disappear', 'need to disappear',
+      'going to disappear', 'gonna disappear', 'wanna disappear',
+      'feel like disappearing', 'thinking about disappearing',
+      'want to disappear forever', 'wish i could disappear forever',
+      'should disappear forever', 'vanish forever', 'fade away',
+      'invisible forever', 'gone forever', 'erased from existence',
+      
+      // ═══ CRITICAL: All "don't want to live" variations ═══
+      'dont want to live', 'don\'t want to live', 'do not want to live',
+      'dont want to live anymore', 'don\'t want to live anymore',
+      'do not want to live anymore', 'dont wanna live', 'don\'t wanna live',
+      'tired of living', 'sick of living', 'done with living',
+      'cant live like this', 'can\'t live like this', 'cannot live like this',
+      'dont want to be alive', 'don\'t want to be alive',
+      'wish i wasnt alive', 'wish i wasn\'t alive', 'wish i was never alive',
       
       // ═══ CRITICAL: Self-harm expressions (HIGH CONFIDENCE) ═══
       'hurt myself', 'harm myself', 'cut myself', 'cutting myself',
       'self harm', 'self-harm', 'want to cut', 'going to cut',
       'thinking about cutting', 'need to cut', 'deserve to be hurt',
       'should hurt myself', 'want to hurt myself', 'make myself bleed',
+      'punish myself', 'deserve pain', 'need to feel pain',
       
       // ═══ CRITICAL: Burden statements (HIGH CONFIDENCE) ═══
       'everyone would be better off without me', 'better off without me',
       'world would be better without me', 'wish i was never born',
       'wish i never existed', 'shouldnt exist', 'regret being born',
       'shouldve never been born', 'should have never been born',
-      'never should have been born', 'wish i could disappear',
+      'never should have been born', 'mistake to be born',
+      'shouldnt be here', 'don\'t belong here', 'dont belong here',
+      'nobody would miss me', 'no one would miss me', 'wouldnt be missed',
+      'nobody would care', 'no one would care', 'nobody cares',
+      'burden to everyone', 'waste of space', 'waste of life',
       
       // ═══ HIGH: Severe self-hatred (MEDIUM-HIGH CONFIDENCE) ═══
       'hate myself', 'cant stand myself', 'despise myself', 'loathe myself',
       'im worthless', 'im pathetic', 'im useless', 'waste of space',
       'piece of shit', 'complete failure', 'broken beyond repair',
-      'fucking worthless', 'absolutely worthless',
+      'fucking worthless', 'absolutely worthless', 'totally worthless',
+      'hate who i am', 'hate everything about myself', 'disgusted with myself',
+      'ashamed of myself', 'disappointed in myself', 'failed at everything',
       
       // ═══ HIGH: Severe hopelessness (MEDIUM-HIGH CONFIDENCE) ═══
       'completely hopeless', 'no hope left', 'give up on life', 'giving up on life',
       'cant go on living', 'cant take it anymore', 'had enough of life',
       'done trying to live', 'tired of existing', 'game over for me',
-      'lost the battle with life', 'no point in living',
+      'lost the battle with life', 'no point in living', 'pointless to live',
+      'nothing to live for', 'no reason to live', 'lost all hope',
+      'hope is gone', 'gave up hope', 'beyond help', 'cant be helped',
+      'no way out', 'trapped forever', 'stuck in hell', 'living hell',
       
       // ═══ HIGH: Crisis states (MEDIUM-HIGH CONFIDENCE) ═══
       'mental breakdown', 'nervous breakdown', 'complete breakdown',
       'falling apart completely', 'losing my mind', 'going insane',
       'cant cope with life', 'drowning in pain', 'suffocating from pain',
       'trapped in hell', 'living nightmare', 'want the pain to stop forever',
+      'cant handle this', 'cant take this', 'too much to handle',
+      'overwhelmed by life', 'crushed by life', 'destroyed by life',
+      'broken inside', 'shattered completely', 'empty inside',
       
       // ═══ MEDIUM: Severe distress requiring careful detection ═══
-      'i just want to end it all', 'want to end it all', 'end everything',
       'make it all stop', 'stop the pain forever', 'escape this hell',
       'cant handle this anymore', 'too much pain to bear',
-      'nobody would miss me', 'no one would care if i died',
       'invisible to everyone', 'completely alone in this world',
-      'feel like dying', 'wish i could just disappear forever'
+      'feel like dying', 'ready to give up', 'giving up on everything',
+      'whats the point', 'what\'s the point', 'no point anymore',
+      'why bother living', 'why continue living', 'why keep going',
+      'cant keep going', 'can\'t keep going', 'done fighting',
+      'tired of fighting', 'exhausted from living', 'drained of life'
     ];
     
-    // PRECISE MATCHING: Require exact phrase matches for reliability
+    // Helper function for typo tolerance
+    const getLevenshteinDistance = (str1: string, str2: string): number => {
+      const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+      
+      for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+      for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+      
+      for (let j = 1; j <= str2.length; j++) {
+        for (let i = 1; i <= str1.length; i++) {
+          const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+          matrix[j][i] = Math.min(
+            matrix[j][i - 1] + 1, // deletion
+            matrix[j - 1][i] + 1, // insertion
+            matrix[j - 1][i - 1] + indicator // substitution
+          );
+        }
+      }
+      
+      return matrix[str2.length][str1.length];
+    };
+
+    // MULTI-LAYER DETECTION: Comprehensive matching with typo tolerance
     const hasHinderingContent = hinderingPatterns.some(pattern => {
-      // Check for exact phrase match (most reliable)
+      // Layer 1: Exact phrase match (most reliable)
       if (normalizedInput.includes(pattern)) {
         return true;
       }
       
-      // For critical patterns, also try word-by-word matching with high threshold
-      if (pattern.includes('kill myself') || pattern.includes('end my life') || 
-          pattern.includes('suicide') || pattern.includes('want to die')) {
-        const patternWords = pattern.split(' ');
-        const inputWords = normalizedInput.split(' ');
+      // Layer 2: Typo-tolerant matching for critical patterns
+      const criticalKeywords = ['kill', 'suicide', 'die', 'dead', 'end', 'disappear', 'hurt', 'hate'];
+      const patternWords = pattern.split(' ');
+      const inputWords = normalizedInput.split(' ');
+      
+      // Check if pattern contains critical keywords
+      const hasCriticalWords = patternWords.some(word => 
+        criticalKeywords.some(critical => word.includes(critical))
+      );
+      
+      if (hasCriticalWords) {
         let matchCount = 0;
+        let typoMatchCount = 0;
         
-        patternWords.forEach(word => {
-          if (inputWords.includes(word) || 
-              inputWords.includes(word.replace('cant', 'cannot')) ||
-              inputWords.includes(word.replace('im', 'i am'))) {
+        patternWords.forEach(patternWord => {
+          // Exact word match
+          if (inputWords.includes(patternWord)) {
             matchCount++;
+            return;
           }
+          
+          // Common contractions and variations
+          const variations = [
+            patternWord.replace('cant', 'cannot').replace('can\'t', 'cannot'),
+            patternWord.replace('dont', 'do not').replace('don\'t', 'do not'),
+            patternWord.replace('im', 'i am').replace('i\'m', 'i am'),
+            patternWord.replace('wont', 'will not').replace('won\'t', 'will not'),
+            patternWord.replace('isnt', 'is not').replace('isn\'t', 'is not'),
+            patternWord.replace('wasnt', 'was not').replace('wasn\'t', 'was not'),
+            patternWord.replace('shouldnt', 'should not').replace('shouldn\'t', 'should not'),
+            patternWord.replace('wouldnt', 'would not').replace('wouldn\'t', 'would not'),
+            patternWord.replace('couldnt', 'could not').replace('couldn\'t', 'could not')
+          ];
+          
+          if (variations.some(variation => inputWords.includes(variation))) {
+            matchCount++;
+            return;
+          }
+          
+          // Typo tolerance: Check for similar words (1-2 character differences)
+          inputWords.forEach(inputWord => {
+            if (inputWord.length >= 3 && patternWord.length >= 3) {
+              const distance = getLevenshteinDistance(patternWord, inputWord);
+              const maxDistance = Math.floor(Math.max(patternWord.length, inputWord.length) * 0.25);
+              
+              if (distance <= maxDistance && distance <= 2) {
+                typoMatchCount++;
+              }
+            }
+          });
         });
         
-        // Require 80% word match for critical patterns
-        if (matchCount >= Math.ceil(patternWords.length * 0.8)) {
+        // For critical patterns: require high word match percentage
+        const totalMatches = matchCount + Math.floor(typoMatchCount * 0.5); // Typos count as half
+        const matchPercentage = totalMatches / patternWords.length;
+        
+        if (matchPercentage >= 0.75) { // 75% word match required
+          return true;
+        }
+      }
+      
+      // Layer 3: Contextual detection for implied meanings
+      const contextualPatterns = [
+        // "end it" + "all" variations
+        { keywords: ['end', 'all'], weight: 0.8 },
+        { keywords: ['want', 'die'], weight: 0.9 },
+        { keywords: ['kill', 'myself'], weight: 1.0 },
+        { keywords: ['hate', 'myself'], weight: 0.7 },
+        { keywords: ['disappear', 'forever'], weight: 0.8 },
+        { keywords: ['better', 'without', 'me'], weight: 0.8 },
+        { keywords: ['tired', 'living'], weight: 0.7 },
+        { keywords: ['done', 'life'], weight: 0.8 },
+        { keywords: ['give', 'up'], weight: 0.6 },
+        { keywords: ['no', 'hope'], weight: 0.7 },
+        { keywords: ['cant', 'anymore'], weight: 0.7 },
+        { keywords: ['pain', 'stop'], weight: 0.6 }
+      ];
+      
+      for (const contextPattern of contextualPatterns) {
+        const foundKeywords = contextPattern.keywords.filter(keyword => 
+          inputWords.some(word => 
+            word.includes(keyword) || 
+            getLevenshteinDistance(keyword, word) <= 1
+          )
+        );
+        
+        const keywordMatchRatio = foundKeywords.length / contextPattern.keywords.length;
+        if (keywordMatchRatio >= contextPattern.weight) {
           return true;
         }
       }

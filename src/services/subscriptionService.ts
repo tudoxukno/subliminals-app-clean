@@ -7,6 +7,7 @@ const MOCK_ENABLED = true; // Set to false when RevenueCat is integrated
 // Freemium configuration
 export const FREEMIUM_CONFIG = {
   dailyLimit: 3, // Free users get 3 subliminals per day
+  saveLimit: 10, // Free users can save up to 10 subliminals
   premiumArchetypes: ['Best Friend'], // Archetypes requiring premium
   premiumFeatures: [
     'unlimited_daily_subliminals',
@@ -45,6 +46,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     duration: 'Forever',
     features: [
       '3 subliminals per day',
+      '10 saved subliminals max',
       '4 basic archetypes',
       'Contextual backgrounds',
       'Local storage only'
@@ -57,10 +59,10 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     duration: 'per month',
     features: [
       'Unlimited subliminals',
+      'Unlimited saves with cloud sync',
       'All 5 archetypes including Best Friend',
       'Switch between archetypes freely',
       'AI-generated backgrounds',
-      'Unlimited saves with cloud sync',
       'Premium AI models (GPT-4o)',
       'Priority support'
     ],
@@ -252,6 +254,7 @@ class SubscriptionService {
   getFreemiumStatus(): {
     isFreemium: boolean;
     dailyLimit: number;
+    saveLimit: number;
     premiumArchetypes: string[];
     upgradeRequired: string[];
   } {
@@ -260,9 +263,102 @@ class SubscriptionService {
     return {
       isFreemium,
       dailyLimit: FREEMIUM_CONFIG.dailyLimit,
+      saveLimit: FREEMIUM_CONFIG.saveLimit,
       premiumArchetypes: FREEMIUM_CONFIG.premiumArchetypes,
       upgradeRequired: isFreemium ? FREEMIUM_CONFIG.premiumFeatures : [],
     };
+  }
+
+  // Save Limit Logic
+
+  // Check if user can save (unlimited for premium, limited for free)
+  async canSave(): Promise<{ canSave: boolean; currentCount: number; limit: number; reason?: string }> {
+    // Premium users have unlimited saves
+    if (this.hasUnlimitedAccess()) {
+      return {
+        canSave: true,
+        currentCount: 0, // Not tracked for premium users
+        limit: -1, // -1 indicates unlimited
+      };
+    }
+
+    // Free users have save limit
+    try {
+      const { getSavedSubliminals } = await import('../utils/storage');
+      const savedSubliminals = await getSavedSubliminals();
+      const currentCount = savedSubliminals.length;
+      const limit = FREEMIUM_CONFIG.saveLimit;
+      
+      const canSave = currentCount < limit;
+      const reason = canSave ? undefined : `You've reached your ${limit} save limit. Upgrade to Premium for unlimited saves, or clear some saves in Settings.`;
+
+      return {
+        canSave,
+        currentCount,
+        limit,
+        reason,
+      };
+    } catch (error) {
+      console.error('Error checking save limit:', error);
+      // Default to allowing save if we can't check
+      return {
+        canSave: true,
+        currentCount: 0,
+        limit: FREEMIUM_CONFIG.saveLimit,
+      };
+    }
+  }
+
+  // Get save status for UI display
+  async getSaveStatus(): Promise<{ 
+    currentCount: number; 
+    limit: number; 
+    isUnlimited: boolean; 
+    percentUsed: number;
+    nearLimit: boolean;
+    atLimit: boolean;
+  }> {
+    const isUnlimited = this.hasUnlimitedAccess();
+    
+    if (isUnlimited) {
+      return {
+        currentCount: 0,
+        limit: -1,
+        isUnlimited: true,
+        percentUsed: 0,
+        nearLimit: false,
+        atLimit: false,
+      };
+    }
+
+    try {
+      const { getSavedSubliminals } = await import('../utils/storage');
+      const savedSubliminals = await getSavedSubliminals();
+      const currentCount = savedSubliminals.length;
+      const limit = FREEMIUM_CONFIG.saveLimit;
+      const percentUsed = (currentCount / limit) * 100;
+      const nearLimit = percentUsed >= 80; // Near limit at 80%
+      const atLimit = currentCount >= limit;
+
+      return {
+        currentCount,
+        limit,
+        isUnlimited: false,
+        percentUsed,
+        nearLimit,
+        atLimit,
+      };
+    } catch (error) {
+      console.error('Error getting save status:', error);
+      return {
+        currentCount: 0,
+        limit: FREEMIUM_CONFIG.saveLimit,
+        isUnlimited: false,
+        percentUsed: 0,
+        nearLimit: false,
+        atLimit: false,
+      };
+    }
   }
 
   // Helper method to format renewal date

@@ -21,6 +21,7 @@ import { BackButton } from '../components/BackButton';
 import { SavedArchetypeCard } from '../components/SavedArchetypeCard';
 import { AuthenticationModal } from '../components/AuthenticationModal';
 import { useAuth } from '../context/AuthContext';
+import subscriptionService from '../services/subscriptionService';
 
 const { width } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -138,6 +139,14 @@ const SavedSubliminalsScreen = () => {
   const [savedSubliminals, setSavedSubliminals] = useState<SavedSubliminalWithDisplayDate[]>([]);
   const [isLoadingSubliminals, setIsLoadingSubliminals] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{
+    currentCount: number;
+    limit: number;
+    isUnlimited: boolean;
+    percentUsed: number;
+    nearLimit: boolean;
+    atLimit: boolean;
+  } | null>(null);
 
   const loadSavedSubliminals = async () => {
     if (!isAuthenticated) return;
@@ -150,6 +159,10 @@ const SavedSubliminalsScreen = () => {
         displayDate: formatDate(subliminal.dateSaved)
       }));
       setSavedSubliminals(withDisplayDates);
+      
+      // Load save status for counter display
+      const status = await subscriptionService.getSaveStatus();
+      setSaveStatus(status);
     } catch (error) {
       console.error('Error loading saved subliminals:', error);
     } finally {
@@ -221,7 +234,7 @@ const SavedSubliminalsScreen = () => {
           onPress: async () => {
             try {
               await removeSavedSubliminal(subliminal.id);
-              loadSavedSubliminals();
+              loadSavedSubliminals(); // This will also refresh save status
             } catch (error) {
               console.error('Error deleting subliminal:', error);
               Alert.alert('Error', 'Failed to delete subliminal. Please try again.');
@@ -289,7 +302,21 @@ const SavedSubliminalsScreen = () => {
           <SafeAreaView>
             <View style={styles.header}>
               <BackButton />
-              <Text style={styles.headerTitle}>Saved Subliminals</Text>
+              <View style={styles.headerCenter}>
+                <Text style={styles.headerTitle}>Saved Subliminals</Text>
+                {saveStatus && !saveStatus.isUnlimited && (
+                  <Text style={[
+                    styles.saveCounter, 
+                    saveStatus.nearLimit && styles.saveCounterWarning,
+                    saveStatus.atLimit && styles.saveCounterError
+                  ]}>
+                    {saveStatus.currentCount} / {saveStatus.limit} saves
+                  </Text>
+                )}
+                {saveStatus && saveStatus.isUnlimited && (
+                  <Text style={styles.saveCounterUnlimited}>Unlimited saves</Text>
+                )}
+              </View>
             </View>
           </SafeAreaView>
 
@@ -332,10 +359,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     height: Platform.OS === 'ios' ? 84 : 64,
   },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
+  },
   headerTitle: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  saveCounter: {
+    color: '#888',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  saveCounterWarning: {
+    color: '#FFA726', // Orange for near limit
+  },
+  saveCounterError: {
+    color: '#EF5350', // Red for at limit
+  },
+  saveCounterUnlimited: {
+    color: '#4CAF50', // Green for unlimited
+    fontSize: 12,
+    marginTop: 2,
   },
   scrollView: {
     flex: 1,
