@@ -1,4 +1,14 @@
-import React, { useState } from 'react';
+// Polyfill for useInsertionEffect to fix React 19 compatibility issues
+import React, { useState, useLayoutEffect, useEffect } from 'react';
+if (!React.useInsertionEffect) {
+  React.useInsertionEffect = (effect, deps) => {
+    // Use useEffect instead of useLayoutEffect to avoid timing issues
+    useEffect(() => {
+      return effect();
+    }, deps);
+  };
+}
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
