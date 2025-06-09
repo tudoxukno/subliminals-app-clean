@@ -425,7 +425,7 @@ const ArchetypeSelectionScreen = () => {
                 >
                   <View style={styles.cardContent}>
                     {/* Lock icon in top right corner */}
-                    {isLocked && !isDailyLimitReached && (
+                    {(isLocked || isDailyLimitReached) && (
                       <View style={styles.topRightLockIcon}>
                         <Ionicons name="lock-closed" size={18} color="#666" />
                       </View>
@@ -487,28 +487,22 @@ const ArchetypeSelectionScreen = () => {
                         ))}
                       </View>
                       <View style={styles.arrowContainer}>
-                        {isDailyLimitReached ? (
-                          <TouchableOpacity 
-                            style={styles.upgradeButton}
-                            onPress={() => {
-                              resetBannerForLimitAttempt();
-                              setUpgradeModalTrigger('daily_limit');
-                              setShowUpgradeModal(true);
-                            }}
-                          >
-                            <Text style={styles.upgradeButtonText}>UPGRADE</Text>
-                          </TouchableOpacity>
-                        ) : !isLocked ? (
+                        {!isLocked && !isDailyLimitReached ? (
                           <Ionicons name="chevron-forward" size={20} color="#666" />
                         ) : null}
                       </View>
                     </View>
                   </View>
-                  {isLocked && !isDailyLimitReached && (
+                  {(isLocked || isDailyLimitReached) && (
                     <TouchableOpacity 
                       style={styles.lockOverlay}
                       onPress={() => {
-                        setUpgradeModalTrigger('archetype_switching');
+                        if (isDailyLimitReached) {
+                          resetBannerForLimitAttempt();
+                          setUpgradeModalTrigger('daily_limit');
+                        } else {
+                          setUpgradeModalTrigger('archetype_switching');
+                        }
                         setShowUpgradeModal(true);
                       }}
                       activeOpacity={0.8}
