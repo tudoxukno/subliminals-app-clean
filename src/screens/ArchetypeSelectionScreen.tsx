@@ -376,7 +376,7 @@ const ArchetypeSelectionScreen = () => {
         {/* Back Button (S Logo) */}
         <View style={styles.backButton}>
           <TouchableOpacity 
-            onPress={handleGoBack}
+            onPress={handleGoBack} 
             style={styles.backButtonTouchable}
           >
             <Image 
@@ -539,6 +539,16 @@ const ArchetypeSelectionScreen = () => {
                         setShowUpgradeModal(true);
                       }}
                       activeOpacity={0.8}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Upgrade to unlock ${archetype} archetype`}
+                      accessibilityHint={
+                        isPremiumLocked 
+                          ? "Double tap to view premium upgrade options"
+                          : isDailyLimitReached 
+                          ? "Double tap to upgrade and continue beyond daily limit"
+                          : "Double tap to upgrade and unlock archetype switching"
+                      }
                     >
                       <LinearGradient
                         colors={['#4A90E2', '#5BA0F2', '#4A90E2']}
@@ -638,6 +648,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: STATUS_BAR_HEIGHT + 140,
     paddingBottom: 24,
+  },
+  userInputSection: {
+    marginBottom: 8,
   },
   header: {
     color: '#fff',
@@ -804,9 +817,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'left',
   },
-  userInputSection: {
-    marginBottom: 8,
-  },
   // Freemium locking styles
   lockedCard: {
     opacity: 0.6,
@@ -853,8 +863,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   lockGradientBackground: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   lockCtaContainer: {
     flexDirection: 'row',
@@ -864,13 +878,13 @@ const styles = StyleSheet.create({
   },
   lockText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
   // Daily limit reached styles
   limitReachedCard: {
