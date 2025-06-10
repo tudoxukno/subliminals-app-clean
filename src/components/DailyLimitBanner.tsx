@@ -15,7 +15,7 @@ import { useDailyUsage } from '../context/DailyUsageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface DailyLimitBannerProps {
-  onUpgradePress?: () => void;
+  onUpgradePress?: (level: 'high' | 'medium' | 'low') => void;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -185,7 +185,7 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
   };
 
   const handleUpgrade = () => {
-    onUpgradePress?.();
+    onUpgradePress?.(bannerConfig.level);
   };
 
   const handleIndicatorPress = () => {

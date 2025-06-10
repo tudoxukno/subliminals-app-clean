@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 import { BottomNav } from '../components/BottomNav';
 import TextInputField from '../components/TextInputField';
 import { DailyLimitBanner } from '../components/DailyLimitBanner';
+import { UpgradeModal } from '../components/UpgradeModal';
 import { useDailyUsage } from '../context/DailyUsageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -555,6 +556,8 @@ const HomeScreen = () => {
   const [isFocused, setIsFocused] = useState(false);
   const [inputHeight, setInputHeight] = useState(INPUT_MIN_HEIGHT);
   const [quickstartPrompts, setQuickstartPrompts] = useState<string[][]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'general_upgrade'>('general_upgrade');
   const textInputRef = useRef<TextInput>(null);
   
   // Animation values
@@ -665,9 +668,14 @@ const HomeScreen = () => {
     navigation.navigate('ActiveTextInput', { initialText: '' });
   };
 
-  const handleUpgradePress = () => {
-    // TODO: Navigate to paywall when implemented
-    console.log('Upgrade pressed - navigate to paywall');
+  const handleUpgradePress = (level: 'high' | 'medium' | 'low') => {
+    console.log('Banner upgrade pressed - level:', level);
+    
+    // Use daily_limit trigger only when limit is actually reached (high level)
+    // Use general_upgrade trigger for promotional banners (medium/low levels)
+    const trigger = level === 'high' ? 'daily_limit' : 'general_upgrade';
+    setUpgradeModalTrigger(trigger);
+    setShowUpgradeModal(true);
   };
 
   return (
@@ -743,6 +751,13 @@ const HomeScreen = () => {
             <BottomNav onNewPress={handleNewPress} />
           </View>
         </SafeAreaView>
+
+        {/* Upgrade Modal */}
+        <UpgradeModal
+          visible={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          trigger={upgradeModalTrigger}
+        />
       </LinearGradient>
     </TouchableWithoutFeedback>
   );
