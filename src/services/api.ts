@@ -4,6 +4,8 @@ const API_BASE_URL = 'http://192.168.1.35:3000';
 export interface GenerateRequest {
   userInput: string;
   archetype: string;
+  canGenerateAI?: boolean; // Permission to generate AI backgrounds
+  isPremiumUser?: boolean; // For backend logging and decision making
 }
 
 export interface ArchetypeData {
@@ -137,11 +139,13 @@ export const generateBackgroundImage = async (
 // Original function (now with background images) - kept for compatibility
 export const generateSubliminalContent = async (
   userInput: string,
-  archetype: string
+  archetype: string,
+  canGenerateAI: boolean = true,
+  isPremiumUser: boolean = false
 ): Promise<string> => {
   try {
     console.log('Making API request to:', `${API_BASE_URL}/generate`);
-    console.log('Request data:', { userInput, archetype });
+    console.log('Request data:', { userInput, archetype, canGenerateAI, isPremiumUser });
     
     const response = await fetch(`${API_BASE_URL}/generate`, {
       method: 'POST',
@@ -151,6 +155,8 @@ export const generateSubliminalContent = async (
       body: JSON.stringify({
         userInput: userInput.trim(),
         archetype,
+        canGenerateAI,
+        isPremiumUser,
       }),
     });
 

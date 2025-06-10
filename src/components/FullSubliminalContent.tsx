@@ -126,14 +126,19 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       'things are good', 'things are great', 'life is good', 'life is great',
       'things are looking up', 'turning around', 'getting back on track',
       'feeling myself again', 'back to myself', 'like myself again',
-      'proud of myself', 'accomplished something', 'achieved', 'succeeded',
+      'proud of', 'proud that', 'proud of myself', 'accomplished something', 'achieved', 'succeeded',
+      'how far ive come', 'how far i have come', 'where i am now', 'come so far',
+      'progress ive made', 'progress i have made', 'growth ive had', 'journey ive taken',
       'won', 'victory', 'breakthrough', 'milestone', 'celebration',
       'grateful for', 'thankful for', 'blessed with', 'appreciate',
       'love my', 'surrounded by love', 'supported by', 'great friends',
       'wonderful family', 'amazing people', 'feel loved by', 'care about me',
       'excited about', 'looking forward', 'cant wait', 'eager to',
       'optimistic about', 'hopeful about', 'confident about', 'ready for',
-      'bright future', 'good things coming', 'positive changes'
+      'bright future', 'good things coming', 'positive changes',
+      'overcame', 'got through', 'survived', 'made progress', 'moved forward',
+      'reached my goal', 'completed', 'finished', 'made it', 'did it',
+      'celebrating', 'victory', 'triumph', 'achievement', 'accomplishment'
     ];
     
     const hasPositiveContent = positivePatterns.some(pattern => 

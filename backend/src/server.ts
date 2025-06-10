@@ -103,7 +103,7 @@ app.post('/generate-gemini', async (req: Request, res: Response) => {
 // Main generation endpoint (full response with background)
 app.post('/generate', async (req: Request, res: Response) => {
   try {
-    const { userInput, archetype } = req.body as GenerateRequest;
+    const { userInput, archetype, canGenerateAI = true, isPremiumUser = false } = req.body as GenerateRequest;
     
     if (!userInput || !archetype) {
       return res.status(400).json({ 
@@ -112,13 +112,19 @@ app.post('/generate', async (req: Request, res: Response) => {
       });
     }
 
+    console.log('🎨 AI Background Permission Check:', {
+      canGenerateAI,
+      isPremiumUser,
+      userInput: userInput.substring(0, 50) + '...'
+    });
+
     // Try OpenAI first, fallback to Gemini if it fails
     let response;
     try {
-      response = await generateSubliminalResponse(userInput, archetype);
+      response = await generateSubliminalResponse(userInput, archetype, canGenerateAI);
     } catch (openaiError) {
       console.log('🔄 OpenAI failed, trying Gemini fallback...');
-      response = await generateSubliminalResponseWithGemini(userInput, archetype);
+      response = await generateSubliminalResponseWithGemini(userInput, archetype, canGenerateAI);
     }
     
     res.json({ success: true, data: response });
@@ -167,7 +173,7 @@ app.post('/generate-background', async (req: Request, res: Response) => {
 // Regenerate background with different style
 app.post('/regenerate-background', async (req: Request, res: Response) => {
   try {
-    const { archetype, userInput, response, quote, currentStyleIndex } = req.body as RegenerateBackgroundRequest;
+    const { archetype, userInput, response, quote, currentStyleIndex, canGenerateAI = true, isPremiumUser = false } = req.body as RegenerateBackgroundRequest;
     
     if (!archetype || !userInput || !response || !quote) {
       return res.status(400).json({ 
@@ -176,12 +182,20 @@ app.post('/regenerate-background', async (req: Request, res: Response) => {
       });
     }
 
+    console.log('🎨 Background Regeneration Permission Check:', {
+      canGenerateAI,
+      isPremiumUser,
+      archetype,
+      currentStyleIndex
+    });
+
     const result = await regenerateBackground(
       archetype, 
       userInput, 
       response, 
       quote, 
-      currentStyleIndex
+      currentStyleIndex,
+      canGenerateAI
     );
     
     res.json({ success: true, data: result });

@@ -114,7 +114,7 @@ const SettingsScreen = () => {
   const [currentSubscriptionState, setCurrentSubscriptionState] = useState<'free' | 'premium'>('free');
   const [showDebugModal, setShowDebugModal] = useState(false);
 
-  const { resetDailyUsageForTesting } = useDailyUsage();
+  const { resetDailyUsageForTesting, resetAIBackgroundUsageForTesting, dailyUsage, dailyLimit, aiBackgroundUsage, aiBackgroundLimit, canGenerateAIBackground } = useDailyUsage();
 
   useEffect(() => {
     loadStorageInfo();
@@ -417,11 +417,33 @@ const SettingsScreen = () => {
                   onPress={() => setShowDebugModal(true)}
                 />
                 <SettingsItem
+                  title="AI Background Status"
+                  subtitle={`${aiBackgroundUsage}/${aiBackgroundLimit} used today • ${canGenerateAIBackground ? 'Can generate' : 'Limit reached'}`}
+                  rightElement={
+                    <View style={[
+                      styles.statusIndicator,
+                      canGenerateAIBackground ? styles.statusGreen : styles.statusRed
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {canGenerateAIBackground ? '✓' : '✗'}
+                      </Text>
+                    </View>
+                  }
+                />
+                <SettingsItem
                   title="Reset Daily Usage"
                   subtitle="Reset to 0/3 for testing banner states"
                   onPress={async () => {
                     await resetDailyUsageForTesting();
                     Alert.alert('✅ Reset Complete', 'Daily usage reset to 0/3. You can now test the banner behavior from the beginning.');
+                  }}
+                />
+                <SettingsItem
+                  title="Reset AI Background Usage"
+                  subtitle="Reset AI backgrounds to 0/1 for testing"
+                  onPress={async () => {
+                    await resetAIBackgroundUsageForTesting();
+                    Alert.alert('✅ AI Background Reset Complete', 'AI background usage reset to 0/1. You can now test AI background limits.');
                   }}
                 />
               </View>
@@ -731,6 +753,24 @@ const styles = StyleSheet.create({
   debugTitle: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  statusIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusGreen: {
+    backgroundColor: '#4CAF50',
+  },
+  statusRed: {
+    backgroundColor: '#FF4444',
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

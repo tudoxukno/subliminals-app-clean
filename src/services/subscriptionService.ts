@@ -8,12 +8,14 @@ const MOCK_ENABLED = true; // Set to false when RevenueCat is integrated
 export const FREEMIUM_CONFIG = {
   dailyLimit: 3, // Free users get 3 subliminals per day
   saveLimit: 10, // Free users can save up to 10 subliminals
+  aiBackgroundsPerDay: 1, // Free users get 1 AI-generated background per day
   premiumArchetypes: ['Best Friend'], // Archetypes requiring premium
   premiumFeatures: [
     'unlimited_daily_subliminals',
     'all_archetypes',
     'archetype_switching',
-    'ai_backgrounds',
+    'unlimited_ai_backgrounds', // Changed from 'ai_backgrounds' to be more specific
+    'background_regeneration', // New: ability to regenerate/refresh AI backgrounds
     'unlimited_saves',
     'premium_models', // GPT-4o instead of GPT-3.5/Gemini
     'cloud_sync',
@@ -48,7 +50,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       '3 subliminals per day',
       '10 saved subliminals max',
       '4 basic archetypes',
-      'Contextual backgrounds',
+      '1 AI background per day',
       'Local storage only'
     ]
   },
@@ -62,7 +64,8 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       'Unlimited saves with cloud sync',
       'All 5 archetypes including Best Friend',
       'Switch between archetypes freely',
-      'AI-generated backgrounds',
+      'Unlimited AI-generated backgrounds',
+      'Background regeneration & styles',
       'Premium AI models (GPT-4o)',
       'Priority support'
     ],

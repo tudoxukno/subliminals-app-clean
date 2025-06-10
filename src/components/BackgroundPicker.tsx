@@ -19,9 +19,12 @@ export type Background = {
   url?: string; // AI-generated background URL
   label?: string; // Optional label for the background
   isAIGenerated?: boolean; // Flag to identify AI-generated backgrounds
+  backgroundType?: string; // Type of background (ai-generated, contextual-color, etc.)
   styleIndex?: number; // Current style index for AI backgrounds
   styleName?: string; // Name of the current style
   isLoading?: boolean; // Flag to indicate if the AI background is being generated
+  isPremiumFeature?: boolean; // Flag to indicate if this requires premium
+  canRegenerate?: boolean; // Flag to indicate if user can regenerate this background
 };
 
 type BackgroundPickerProps = {
@@ -31,6 +34,9 @@ type BackgroundPickerProps = {
   onRegenerateBackground?: (background: Background) => void;
   title?: string;
   isRegenerating?: boolean;
+  canRegenerateAI?: boolean; // New prop to indicate if user can regenerate AI backgrounds
+  isPremiumUser?: boolean; // New prop to indicate if user is premium
+  onUpgrade?: () => void; // New prop to trigger upgrade modal
 };
 
 const BackgroundThumbnail: React.FC<{
@@ -41,7 +47,10 @@ const BackgroundThumbnail: React.FC<{
   shouldStartLoading: boolean;
   onLoadComplete: () => void;
   isRegenerating?: boolean;
-}> = ({ background, isSelected, onPress, onRegenerate, shouldStartLoading, onLoadComplete, isRegenerating }) => {
+  canRegenerateAI?: boolean; // New prop
+  isPremiumUser?: boolean; // New prop
+  onUpgrade?: () => void; // New prop for upgrade callback
+}> = ({ background, isSelected, onPress, onRegenerate, shouldStartLoading, onLoadComplete, isRegenerating, canRegenerateAI = false, isPremiumUser = false, onUpgrade }) => {
   const [isLoading, setIsLoading] = useState(!!(background.source || background.url));
   const [hasStartedLoading, setHasStartedLoading] = useState(false);
 
@@ -68,11 +77,23 @@ const BackgroundThumbnail: React.FC<{
     }
   };
 
+  const handleMainPress = () => {
+    // If this is a locked AI background, trigger upgrade instead of selection
+    if (background.isAIGenerated && isRegenerateLocked && onUpgrade) {
+      onUpgrade();
+    } else {
+      onPress();
+    }
+  };
+
+  // Determine if regeneration is locked
+  const isRegenerateLocked = background.isAIGenerated && (!canRegenerateAI || !isPremiumUser);
+
   // Handle AI-generated background that's still loading
   if (background.isAIGenerated && background.isLoading) {
     return (
       <TouchableOpacity
-        onPress={onPress}
+        onPress={handleMainPress}
         style={[
           styles.backgroundOption,
           isSelected && styles.backgroundOptionSelected
@@ -92,7 +113,7 @@ const BackgroundThumbnail: React.FC<{
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handleMainPress}
       style={[
         styles.backgroundOption,
         isSelected && styles.backgroundOptionSelected
@@ -128,19 +149,49 @@ const BackgroundThumbnail: React.FC<{
               </Text>
             </View>
           )}
+          
+          {/* Show background type badge - but not for AI backgrounds when regenerate is locked (PRO indicator is shown instead) */}
+          {background.backgroundType && !(background.isAIGenerated && isRegenerateLocked) && (
+            <View style={[
+              styles.typeBadge,
+              background.backgroundType === 'ai-generated' ? styles.aiBadge : styles.contextualBadge
+            ]}>
+              <Text style={styles.typeBadgeText}>
+                {background.backgroundType === 'ai-generated' ? '✨ AI' : '🎨 Art'}
+              </Text>
+            </View>
+          )}
+          
+          {/* Show premium indicator if needed */}
+          {background.isPremiumFeature && (
+            <View style={styles.premiumBadge}>
+              <Text style={styles.premiumBadgeText}>PRO</Text>
+            </View>
+          )}
+
           {background.isAIGenerated && onRegenerate && (
             <TouchableOpacity 
-              style={styles.regenerateButton}
+              style={[
+                styles.regenerateButton,
+                isRegenerateLocked && styles.regenerateButtonLocked
+              ]}
               onPress={handleRegenerate}
               disabled={isRegenerating}
+              activeOpacity={isRegenerateLocked ? 1 : 0.8}
             >
               {isRegenerating ? (
                 <ActivityIndicator size="small" color="#fff" />
+              ) : isRegenerateLocked ? (
+                <View style={styles.lockedRegenerateContent}>
+                  <Ionicons name="diamond" size={10} color="#fff" />
+                  <Text style={styles.lockedRegenerateText}>PRO</Text>
+                </View>
               ) : (
                 <Ionicons name="refresh" size={16} color="#fff" />
               )}
             </TouchableOpacity>
           )}
+          
           {/* Show centered loading overlay when regenerating */}
           {background.isAIGenerated && isRegenerating && (
             <View style={styles.regenerateLoadingOverlay}>
@@ -164,6 +215,9 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
   onRegenerateBackground,
   title = "Backgrounds",
   isRegenerating = false,
+  canRegenerateAI = false,
+  isPremiumUser = false,
+  onUpgrade,
 }) => {
   const [loadedCount, setLoadedCount] = useState(0);
 
@@ -224,6 +278,9 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
                 shouldStartLoading={shouldStartLoading}
                 onLoadComplete={(bg.isAIGenerated === true && bg.url) ? handleImageLoadComplete : () => {}}
                 isRegenerating={isRegenerating}
+                canRegenerateAI={canRegenerateAI}
+                isPremiumUser={isPremiumUser}
+                onUpgrade={onUpgrade}
               />
             );
           })}
@@ -330,6 +387,11 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  regenerateButtonLocked: {
+    backgroundColor: '#4A90E2', // Blue background to match archetype selection
+    borderColor: '#4A90E2',
+    borderWidth: 1,
+  },
   aiLoadingContainer: {
     position: 'absolute',
     top: 0,
@@ -352,5 +414,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  typeBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  aiBadge: {
+    backgroundColor: '#FFD700',
+  },
+  contextualBadge: {
+    backgroundColor: '#007BFF',
+  },
+  typeBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  premiumBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: '#FF0000',
+  },
+  premiumBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  lockedRegenerateContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  lockedRegenerateText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+    marginLeft: 2,
   },
 }); 

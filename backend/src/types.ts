@@ -14,6 +14,8 @@ export interface ArchetypeData {
 export interface GenerateRequest {
   userInput: string;
   archetype: string;
+  canGenerateAI?: boolean; // Permission to generate AI backgrounds
+  isPremiumUser?: boolean; // For backend logging and decision making
 }
 
 export interface GenerateResponse {
@@ -28,6 +30,8 @@ export interface RegenerateBackgroundRequest {
   response: string;
   quote: string;
   currentStyleIndex?: number;
+  canGenerateAI?: boolean; // Permission to generate AI backgrounds
+  isPremiumUser?: boolean; // For backend logging and decision making
 }
 
 export interface RegenerateBackgroundResponse {

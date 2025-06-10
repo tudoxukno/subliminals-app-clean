@@ -18,6 +18,12 @@ interface DailyUsageContextType {
   resetDailyUsageForTesting: () => Promise<void>;
   checkAndShowBannerOnHomeReturn: () => void;
   resetBannerForLimitAttempt: () => void;
+  // AI Background tracking
+  aiBackgroundUsage: number;
+  aiBackgroundLimit: number;
+  canGenerateAIBackground: boolean;
+  incrementAIBackgroundUsage: () => Promise<void>;
+  resetAIBackgroundUsageForTesting: () => Promise<void>;
 }
 
 interface BannerConfig {
@@ -38,6 +44,8 @@ const DailyUsageContext = createContext<DailyUsageContextType | undefined>(undef
 export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [dailyUsage, setDailyUsage] = useState(0);
   const [dailyLimit] = useState(3); // From FREEMIUM_CONFIG
+  const [aiBackgroundUsage, setAiBackgroundUsage] = useState(0);
+  const [aiBackgroundLimit] = useState(1); // From FREEMIUM_CONFIG
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lastDismissedLevel, setLastDismissedLevel] = useState<string | null>(null);
   const [shouldShowBannerOnHomeReturn, setShouldShowBannerOnHomeReturn] = useState(false);
@@ -57,6 +65,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       }
       
       await loadDailyUsage();
+      await loadAIBackgroundUsage();
     };
     
     initialize();
@@ -155,8 +164,103 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
+  const loadAIBackgroundUsage = async (): Promise<void> => {
+    try {
+      const todayKey = getTodayKey();
+      const usageJson = await AsyncStorage.getItem(`aiBackgroundUsage_${todayKey}`);
+      
+      if (usageJson) {
+        const usageData: DailyUsageData = JSON.parse(usageJson);
+        // HARD CAP: Never load usage above the AI background limit
+        const cappedUsage = Math.min(usageData.count, aiBackgroundLimit);
+        setAiBackgroundUsage(cappedUsage);
+        
+        if (usageData.count > aiBackgroundLimit) {
+          console.log('🚨 CORRUPTED AI BACKGROUND DATA DETECTED: Usage was above limit, capped at', aiBackgroundLimit);
+          // Save the corrected data back to storage
+          await saveAIBackgroundUsage(cappedUsage);
+        }
+      } else {
+        // New day, reset usage
+        setAiBackgroundUsage(0);
+      }
+    } catch (error) {
+      console.error('Error loading AI background usage:', error);
+      setAiBackgroundUsage(0);
+    }
+  };
+
+  const saveAIBackgroundUsage = async (count: number): Promise<void> => {
+    try {
+      const todayKey = getTodayKey();
+      // HARD CAP: Never save usage above the AI background limit
+      const cappedCount = Math.min(count, aiBackgroundLimit);
+      const usageData: DailyUsageData = {
+        date: todayKey,
+        count: cappedCount,
+        entries: [] // Could store entry IDs for more detailed tracking
+      };
+      
+      if (count > aiBackgroundLimit) {
+        console.log('🚨 AI BACKGROUND SAVE BLOCKED: Attempted to save usage above limit, capped at', aiBackgroundLimit);
+      }
+      
+      await AsyncStorage.setItem(`aiBackgroundUsage_${todayKey}`, JSON.stringify(usageData));
+    } catch (error) {
+      console.error('Error saving AI background usage:', error);
+    }
+  };
+
+  const incrementAIBackgroundUsage = async (): Promise<void> => {
+    console.log('🎨 INCREMENT AI BACKGROUND USAGE DEBUG:', {
+      currentUsage: aiBackgroundUsage,
+      aiBackgroundLimit: aiBackgroundLimit,
+      isLimitReached: aiBackgroundUsage >= aiBackgroundLimit,
+      subscriptionInfo: subscriptionInfo,
+      willIncrement: subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && aiBackgroundUsage < aiBackgroundLimit
+    });
+    
+    // HARD CAP: Never allow usage to exceed the limit
+    if (aiBackgroundUsage >= aiBackgroundLimit) {
+      console.log('🎨 AI BACKGROUND INCREMENT BLOCKED: Daily limit already reached or exceeded');
+      return;
+    }
+    
+    // Only increment for free users and only if under the AI background limit
+    if (subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && aiBackgroundUsage < aiBackgroundLimit) {
+      const newCount = Math.min(aiBackgroundUsage + 1, aiBackgroundLimit); // Hard cap at aiBackgroundLimit
+      setAiBackgroundUsage(newCount);
+      await saveAIBackgroundUsage(newCount);
+      
+      console.log('🎨 AI BACKGROUND USAGE INCREMENTED:', {
+        oldCount: aiBackgroundUsage,
+        newCount: newCount,
+        limit: aiBackgroundLimit,
+        remaining: Math.max(0, aiBackgroundLimit - newCount)
+      });
+    } else if (aiBackgroundUsage >= aiBackgroundLimit) {
+      console.log('🎨 AI BACKGROUND INCREMENT SKIPPED: Daily limit already reached');
+    }
+  };
+
+  const resetAIBackgroundUsageForTesting = async (): Promise<void> => {
+    try {
+      // Clear today's AI background usage data from AsyncStorage
+      const todayKey = getTodayKey();
+      await AsyncStorage.removeItem(`aiBackgroundUsage_${todayKey}`);
+      
+      // Reset state
+      setAiBackgroundUsage(0);
+      
+      console.log('🧪 TESTING RESET: AI background usage cleared and reset to 0/1');
+    } catch (error) {
+      console.error('Error resetting AI background usage for testing:', error);
+    }
+  };
+
   const resetIfNewDay = async (): Promise<void> => {
     await loadDailyUsage();
+    await loadAIBackgroundUsage();
   };
 
   const getDaysUntilReset = (): number => {
@@ -219,6 +323,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const isLimitReached = dailyUsage >= dailyLimit;
   const canGenerate = !isLimitReached;
+  const canGenerateAIBackground = isPremiumUser || aiBackgroundUsage < aiBackgroundLimit;
   
   // Determine if banner should show
   const showBanner = useMemo(() => {
@@ -270,16 +375,18 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       // Clear today's usage data from AsyncStorage
       const todayKey = getTodayKey();
       await AsyncStorage.removeItem(`dailyUsage_${todayKey}`);
+      await AsyncStorage.removeItem(`aiBackgroundUsage_${todayKey}`);
       
       // Also clear any legacy usage tracking data that might interfere
       await AsyncStorage.removeItem('@subliminals:daily_usage');
       
       // Reset all state
       setDailyUsage(0);
+      setAiBackgroundUsage(0);
       setBannerDismissed(false);
       setLastDismissedLevel(null);
       
-      console.log('🧪 TESTING RESET: Daily usage cleared and reset to 0/3, legacy data cleaned');
+      console.log('🧪 TESTING RESET: Daily usage cleared and reset to 0/3, AI backgrounds reset to 0/1, legacy data cleaned');
     } catch (error) {
       console.error('Error resetting daily usage for testing:', error);
     }
@@ -322,6 +429,12 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     resetDailyUsageForTesting,
     checkAndShowBannerOnHomeReturn,
     resetBannerForLimitAttempt,
+    // AI Background tracking
+    aiBackgroundUsage,
+    aiBackgroundLimit,
+    canGenerateAIBackground,
+    incrementAIBackgroundUsage,
+    resetAIBackgroundUsageForTesting,
   };
 
   return (

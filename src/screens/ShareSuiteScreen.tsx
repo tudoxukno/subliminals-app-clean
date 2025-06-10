@@ -33,6 +33,9 @@ import { QuoteCard } from '../components/QuoteCard';
 import { BackgroundPicker, type Background } from '../components/BackgroundPicker';
 import { BackButton } from '../components/BackButton';
 import { ScrollHint } from '../components/ScrollHint';
+import subscriptionService from '../services/subscriptionService';
+import { useDailyUsage } from '../context/DailyUsageContext';
+import { UpgradeModal } from '../components/UpgradeModal';
 
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -57,6 +60,7 @@ type RootStackParamList = {
       backgroundImage?: string;
       styleName?: string;
       styleIndex?: number;
+      backgroundType?: string;
     };
   };
 };
@@ -73,7 +77,11 @@ const ShareSuiteScreen = () => {
   const cardRef = useRef<ViewShot>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'background_regeneration'>('background_regeneration');
+
+  const { canGenerateAIBackground, incrementAIBackgroundUsage } = useDailyUsage();
+
   // Create background options with AI-generated background as first option
   const [backgroundOptions, setBackgroundOptions] = useState<Background[]>(() => [
     { id: 0, source: null }, // None option
@@ -84,6 +92,7 @@ const ShareSuiteScreen = () => {
       url: archetypeData.backgroundImage, 
       label: archetypeData.styleName || 'AI',
       isAIGenerated: true,
+      backgroundType: archetypeData.backgroundType || 'ai-generated',
       styleIndex: archetypeData.styleIndex || 0,
       styleName: archetypeData.styleName || 'AI',
       isLoading: !archetypeData.backgroundImage // Show loading if no background yet
@@ -351,6 +360,26 @@ const ShareSuiteScreen = () => {
   const handleRegenerateBackground = async (background: Background) => {
     if (!background.isAIGenerated || isRegenerating) return;
     
+    // Check if user has premium access for background regeneration
+    const isPremiumUser = subscriptionService.hasUnlimitedAccess();
+    
+    if (!isPremiumUser) {
+      console.log('🎨 Background regeneration requires premium - showing upgrade modal');
+      setUpgradeModalTrigger('background_regeneration');
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    // Check if user can generate AI backgrounds
+    const canGenerateAI = canGenerateAIBackground;
+    
+    if (!canGenerateAI) {
+      console.log('🎨 AI background limit reached - showing upgrade modal');
+      setUpgradeModalTrigger('background_regeneration');
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     setIsRegenerating(true);
     
     // Set the background to loading state immediately
@@ -371,13 +400,21 @@ const ShareSuiteScreen = () => {
           archetype: selectedArchetype,
           response: archetypeData.response,
           quote: archetypeData.quote,
-          currentStyleIndex: background.styleIndex
+          currentStyleIndex: background.styleIndex,
+          canGenerateAI: canGenerateAI,
+          isPremiumUser: isPremiumUser,
         }),
       });
 
       const result = await response.json();
       
       if (result.success && result.data.backgroundImage) {
+        // Increment AI background usage for the regeneration
+        if (result.data.backgroundImage && canGenerateAI) {
+          await incrementAIBackgroundUsage();
+          console.log('🎨 AI background usage incremented for regeneration');
+        }
+
         // Create updated background
         const updatedBackground: Background = {
           ...background,
@@ -385,7 +422,8 @@ const ShareSuiteScreen = () => {
           label: result.data.styleName,
           styleIndex: result.data.styleIndex,
           styleName: result.data.styleName,
-          isLoading: false
+          isLoading: false,
+          backgroundType: 'ai-generated' // Mark as AI-generated
         };
         
         // Update the background options array
@@ -534,6 +572,12 @@ const ShareSuiteScreen = () => {
               onSelectBackground={setSelectedBackground}
               onRegenerateBackground={handleRegenerateBackground}
               isRegenerating={isRegenerating}
+              canRegenerateAI={canGenerateAIBackground}
+              isPremiumUser={subscriptionService.hasUnlimitedAccess()}
+              onUpgrade={() => {
+                setUpgradeModalTrigger('background_regeneration');
+                setShowUpgradeModal(true);
+              }}
             />
 
             <TouchableOpacity 
@@ -559,6 +603,15 @@ const ShareSuiteScreen = () => {
           onPress={handleScrollHintTap}
           bottomOffset={20}
           hasInteracted={hasInteractedWithHint}
+        />
+
+        {/* Upgrade Modal */}
+        <UpgradeModal
+          visible={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          trigger={upgradeModalTrigger}
+          userInput={userInput}
+          archetypeName={selectedArchetype}
         />
       </SafeAreaView>
     </LinearGradient>

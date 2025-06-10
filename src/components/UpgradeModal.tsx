@@ -17,7 +17,7 @@ import subscriptionService, { SubscriptionTier } from '../services/subscriptionS
 interface UpgradeModalProps {
   visible: boolean;
   onClose: () => void;
-  trigger: 'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds' | 'unlimited_saves' | 'save_limit';
+  trigger: 'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds' | 'background_regeneration' | 'unlimited_saves' | 'save_limit';
   userInput?: string; // Context for better messaging
   archetypeName?: string; // Which archetype triggered this
 }
@@ -42,10 +42,16 @@ const TRIGGER_MESSAGES = {
     icon: '🫶',
   },
   ai_backgrounds: {
-    title: 'AI-Generated Backgrounds',
-    subtitle: 'Create stunning personalized backgrounds',
-    description: 'Premium subscribers get unlimited AI-generated backgrounds that match your subliminal\'s mood and tone.',
+    title: 'Unlimited AI Backgrounds',
+    subtitle: 'You\'ve used your 1 free AI background today',
+    description: 'Premium subscribers get unlimited AI-generated backgrounds that perfectly match your subliminal\'s mood and energy.',
     icon: '🎨',
+  },
+  background_regeneration: {
+    title: 'Background Regeneration',
+    subtitle: 'Refresh and customize your AI backgrounds',
+    description: 'Premium subscribers can regenerate AI backgrounds with different styles and variations to find the perfect match.',
+    icon: '🔄',
   },
   unlimited_saves: {
     title: 'Unlimited Saves',

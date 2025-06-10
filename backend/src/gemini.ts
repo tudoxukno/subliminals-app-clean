@@ -93,7 +93,8 @@ const getGeminiCacheKey = (userInput: string, archetypeName: string): string => 
 // Generate subliminal response using Gemini
 export async function generateSubliminalResponseWithGemini(
   userInput: string,
-  archetypeName: string
+  archetypeName: string,
+  canGenerateAI: boolean = true
 ): Promise<ArchetypeData> {
   const archetype = archetypes[archetypeName];
   
@@ -141,7 +142,20 @@ export async function generateSubliminalResponseWithGemini(
     }
 
     // Generate contextual background using Gemini or fallback to solid colors
-    const backgroundResult = await generateImageWithGemini(userInput, archetypeName);
+    console.log('🎨 Attempting to generate background image...');
+    let backgroundImage: string;
+    let backgroundType: string;
+
+    // Check if AI background generation is allowed
+    if (canGenerateAI) {
+      const geminiImageResult = await generateImageWithGemini(userInput, archetypeName, canGenerateAI);
+      backgroundImage = geminiImageResult.backgroundImage;
+      backgroundType = geminiImageResult.backgroundType;
+    } else {
+      console.log('🎨 AI background generation blocked - using contextual color background');
+      backgroundImage = getContextualBackground(userInput, archetypeName);
+      backgroundType = 'contextual-color';
+    }
 
     const result_data: ArchetypeData = {
       icon: archetype.icon,
@@ -149,8 +163,8 @@ export async function generateSubliminalResponseWithGemini(
       fullMessage: parsedResponse.fullMessage || parsedResponse.response || 'Your journey matters, and so do you.',
       quote: parsedResponse.quote || 'Growth happens in the spaces between who you were and who you\'re becoming.',
       tags: parsedResponse.tags || ['wisdom', 'growth', 'reflection'],
-      backgroundImage: backgroundResult.backgroundImage,
-      backgroundType: backgroundResult.backgroundType
+      backgroundImage: backgroundImage,
+      backgroundType: backgroundType
     };
 
     console.log('✅ Successfully generated complete response with Gemini');
@@ -343,8 +357,18 @@ Generate a JSON response:
 
 export async function generateImageWithGemini(
   userInput: string, 
-  archetypeName: string
+  archetypeName: string,
+  canGenerateAI: boolean = true
 ): Promise<{backgroundImage: string, backgroundType: string}> {
+  
+  if (!canGenerateAI) {
+    console.log('🎨 AI background generation blocked - using contextual color background');
+    const contextualBackground = getContextualBackground(userInput, archetypeName);
+    return {
+      backgroundImage: contextualBackground,
+      backgroundType: 'contextual-color'
+    };
+  }
   
   try {
     console.log('🎨 Attempting Vertex AI Imagen 3 generation...');

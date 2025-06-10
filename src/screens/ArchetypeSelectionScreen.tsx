@@ -38,6 +38,7 @@ type ArchetypeData = {
   quote: string;
   tags: string[];
   backgroundImage?: string; // AI-generated background URL
+  backgroundType?: string; // Type of background (ai-generated, contextual-color, etc.)
   isHinderingEntry?: boolean; // Indicates if this was a hindering entry requiring extra care
 };
 
@@ -171,7 +172,20 @@ const ArchetypeSelectionScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { userInput, selectedArchetypeInSession, archetypeResponses: passedArchetypeResponses } = route.params;
-  const { incrementUsage, canGenerate, isLimitReached, resetBannerForLimitAttempt, checkAndShowBannerOnHomeReturn } = useDailyUsage();
+  const { 
+    dailyUsage, 
+    dailyLimit, 
+    isLimitReached, 
+    canGenerate, 
+    incrementUsage, 
+    resetBannerForLimitAttempt,
+    checkAndShowBannerOnHomeReturn,
+    // AI Background tracking
+    aiBackgroundUsage,
+    aiBackgroundLimit,
+    canGenerateAIBackground,
+    incrementAIBackgroundUsage,
+  } = useDailyUsage();
   const scrollViewRef = useRef<ScrollView>(null);
   const [loadingArchetype, setLoadingArchetype] = useState<string | null>(null);
   const [archetypeResponses, setArchetypeResponses] = useState<{[key: string]: ArchetypeData}>(passedArchetypeResponses || {});
@@ -179,8 +193,9 @@ const ArchetypeSelectionScreen = () => {
   const [showUserInputModal, setShowUserInputModal] = useState(false);
   const [backgroundsLoading, setBackgroundsLoading] = useState<{[key: string]: boolean}>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'archetype_switching' | 'premium_archetype'>('archetype_switching');
+  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds'>('archetype_switching');
   const [upgradeModalArchetype, setUpgradeModalArchetype] = useState<string | undefined>(undefined);
+  const [isGeneratingFullContent, setIsGeneratingFullContent] = useState(false);
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 2): { truncated: string; needsTruncation: boolean } => {
@@ -296,6 +311,121 @@ const ArchetypeSelectionScreen = () => {
 
     generatePreviews();
   }, [userInput]);
+
+  // Generate full content when user selects an archetype
+  const generateFullContentForArchetype = async (archetype: string): Promise<ArchetypeData | null> => {
+    try {
+      setIsGeneratingFullContent(true);
+      console.log(`🎯 Generating full content for ${archetype}...`);
+
+      // Check if user can generate AI backgrounds
+      const canGenerateAI = canGenerateAIBackground;
+      const isPremiumUser = subscriptionService.hasUnlimitedAccess();
+
+      console.log('🎨 AI Background Permission Check:', {
+        canGenerateAI,
+        isPremiumUser,
+        aiBackgroundUsage,
+        aiBackgroundLimit,
+        archetype
+      });
+
+      // Generate full content with AI background permission
+      const response = await generateSubliminalContent(userInput, archetype, canGenerateAI, isPremiumUser);
+      const fullData: ArchetypeData = JSON.parse(response);
+
+      console.log(`✅ Full content generated for ${archetype}`);
+      console.log('🎨 Background type received:', fullData.backgroundType);
+
+      // Increment AI background usage if this was an AI-generated background
+      if (fullData.backgroundType === 'ai-generated' && canGenerateAI) {
+        await incrementAIBackgroundUsage();
+        console.log('🎨 AI background usage incremented');
+      }
+
+      // Check if this is a positive entry - don't show upgrade modals for positive entries
+      const isPositiveEntry = checkIfPositiveEntry(userInput);
+
+      // Show upgrade modal if user got a contextual background due to AI limit
+      // BUT NOT for positive entries - positive entries should just work gracefully
+      if (fullData.backgroundType === 'contextual-color' && !isPremiumUser && !canGenerateAI && !isPositiveEntry) {
+        console.log('🎨 Showing AI background upgrade modal (non-positive entry)');
+        setUpgradeModalTrigger('ai_backgrounds');
+        setUpgradeModalArchetype(archetype);
+        setShowUpgradeModal(true);
+      } else if (fullData.backgroundType === 'contextual-color' && !isPremiumUser && !canGenerateAI && isPositiveEntry) {
+        console.log('🎨 Skipping AI background upgrade modal for positive entry - graceful fallback');
+      }
+
+      return fullData;
+    } catch (error) {
+      console.error(`Error generating full content for ${archetype}:`, error);
+      return null;
+    } finally {
+      setIsGeneratingFullContent(false);
+    }
+  };
+
+  // Helper function to detect positive entries
+  const checkIfPositiveEntry = (input: string): boolean => {
+    const normalizedInput = input
+      .toLowerCase()
+      .replace(/[.,!?;:\-()[\]{}'"]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const positivePatterns = [
+      // Feeling good patterns
+      'feel great', 'feeling great', 'feel amazing', 'feeling amazing', 
+      'feel wonderful', 'feeling wonderful', 'feel fantastic', 'feeling fantastic',
+      'feel good', 'feeling good', 'feel better', 'feeling better',
+      'feel happy', 'feeling happy', 'feel joyful', 'feeling joyful',
+      'feel blessed', 'feeling blessed', 'feel grateful', 'feeling grateful',
+      'feel thankful', 'feeling thankful', 'feel positive', 'feeling positive',
+      'feel optimistic', 'feeling optimistic', 'feel hopeful', 'feeling hopeful',
+      'feel confident', 'feeling confident', 'feel strong', 'feeling strong',
+      'feel proud', 'feeling proud', 'feel accomplished', 'feeling accomplished',
+      'feel successful', 'feeling successful', 'feel fulfilled', 'feeling fulfilled',
+      'feel content', 'feeling content', 'feel peaceful', 'feeling peaceful',
+      'feel calm', 'feeling calm', 'feel relaxed', 'feeling relaxed',
+      'feel energized', 'feeling energized', 'feel motivated', 'feeling motivated',
+      'feel inspired', 'feeling inspired', 'feel excited', 'feeling excited',
+      'feel ready', 'feeling ready', 'feel prepared', 'feeling prepared',
+      'feel supported', 'feeling supported', 'feel loved', 'feeling loved',
+      'feel appreciated', 'feeling appreciated', 'feel valued', 'feeling valued',
+      'feel connected', 'feeling connected', 'feel like im growing', 'feeling like im growing',
+      'feel progress', 'feeling progress', 'making progress', 'growing stronger',
+      'getting better', 'improving', 'healing', 'recovered', 'recovering',
+      'feel centered', 'feeling centered', 'feel balanced', 'feeling balanced',
+      'feel at peace', 'feeling at peace', 'feel whole', 'feeling whole',
+      
+      // Achievement and pride patterns
+      'proud of', 'proud that', 'achieved', 'accomplished', 'succeeded',
+      'reached my goal', 'completed', 'finished', 'made it', 'did it',
+      'overcame', 'got through', 'survived', 'made progress', 'moved forward',
+      'how far ive come', 'how far i have come', 'where i am now', 'come so far',
+      'progress ive made', 'progress i have made', 'growth ive had', 'journey ive taken',
+      
+      // Gratitude patterns  
+      'grateful for', 'thankful for', 'blessed with', 'appreciate',
+      'love my', 'surrounded by love', 'supported by', 'great friends',
+      'wonderful family', 'amazing people', 'feel loved by', 'care about me',
+      
+      // Positive outlook patterns
+      'excited about', 'looking forward', 'cant wait', 'eager to',
+      'optimistic about', 'hopeful about', 'confident about', 'ready for',
+      'bright future', 'good things coming', 'positive changes',
+      'things are good', 'things are great', 'life is good', 'life is great',
+      'things are looking up', 'turning around', 'getting back on track',
+      'feeling myself again', 'back to myself', 'like myself again',
+      
+      // Celebration patterns
+      'celebrating', 'victory', 'win', 'breakthrough', 'milestone',
+      'success', 'triumph', 'achievement', 'accomplishment'
+    ];
+    
+    return positivePatterns.some(pattern => normalizedInput.includes(pattern));
+  };
 
   const handleGoBack = () => {
     // Trigger banner check when returning to home

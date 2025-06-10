@@ -504,7 +504,8 @@ export const regenerateBackground = async (
   userInput: string, 
   response: string, 
   quote: string,
-  currentStyleIndex?: number
+  currentStyleIndex?: number,
+  canGenerateAI: boolean = true
 ): Promise<{ backgroundImage: string | null; styleIndex: number; styleName: string }> => {
   const styles = archetypeVisualStyles[archetype as keyof typeof archetypeVisualStyles];
   
@@ -512,7 +513,7 @@ export const regenerateBackground = async (
     console.log('🎨 No styles available, using Gemini image generation...');
     try {
       const { generateImageWithGemini } = await import('./gemini');
-      const geminiResult = await generateImageWithGemini(userInput, archetype);
+      const geminiResult = await generateImageWithGemini(userInput, archetype, canGenerateAI);
       return {
         backgroundImage: geminiResult.backgroundImage,
         styleIndex: 0,
@@ -541,6 +542,18 @@ export const regenerateBackground = async (
     };
   }
   
+  // Check if AI background generation is allowed
+  if (!canGenerateAI) {
+    console.log('🎨 AI background regeneration blocked - using contextual color background');
+    const { getContextualBackground } = await import('./gemini');
+    const contextualBackground = getContextualBackground(userInput, archetype);
+    return {
+      backgroundImage: contextualBackground,
+      styleIndex: nextStyleIndex,
+      styleName: 'Contextual Color'
+    };
+  }
+
   // Check if OpenAI is available and image generation is not disabled
   let backgroundImage: string | null = null;
   
@@ -556,7 +569,7 @@ export const regenerateBackground = async (
     console.log('🔄 Using Gemini image generation for regenerate...');
     try {
       const { generateImageWithGemini } = await import('./gemini');
-      const geminiResult = await generateImageWithGemini(userInput, archetype);
+      const geminiResult = await generateImageWithGemini(userInput, archetype, canGenerateAI);
       
       if (geminiResult.backgroundImage) {
         backgroundImage = geminiResult.backgroundImage;
@@ -799,24 +812,25 @@ export const getStyleName = (archetype: string, styleIndex: number): string => {
 };
 
 // Original function with background generation (kept for compatibility)
-export const generateSubliminalResponse = async (
-  userInput: string, 
-  archetype: string
-): Promise<ArchetypeData> => {
-  console.log(`Generating content for archetype: ${archetype}, input: "${userInput}"`);
+export async function generateSubliminalResponse(
+  userInput: string,
+  archetypeName: string,
+  canGenerateAI: boolean = true
+): Promise<ArchetypeData> {
+  console.log(`Generating content for archetype: ${archetypeName}, input: "${userInput}"`);
   
   // Check if OpenAI is available and not over quota
   if (!openai) {
     console.log('🔄 OpenAI not available, using Gemini...');
     // Import and use Gemini as fallback
     const { generateSubliminalResponseWithGemini } = await import('./gemini');
-    return generateSubliminalResponseWithGemini(userInput, archetype);
+    return generateSubliminalResponseWithGemini(userInput, archetypeName);
   }
 
   try {
     console.log('🤖 Making OpenAI API call...');
     
-    const prompt = `Generate a profound, original subliminal response for the ${archetype} archetype.
+    const prompt = `Generate a profound, original subliminal response for the ${archetypeName} archetype.
 
 User input: "${userInput}"
 
@@ -858,7 +872,7 @@ Respond in JSON format:
     } catch (parseError) {
       console.log('⚠️ Failed to parse OpenAI JSON, using Gemini fallback...');
       const { generateSubliminalResponseWithGemini } = await import('./gemini');
-      return generateSubliminalResponseWithGemini(userInput, archetype);
+      return generateSubliminalResponseWithGemini(userInput, archetypeName);
     }
 
     // Try to generate background image, but fall back to contextual colors if DALL-E fails
@@ -866,28 +880,37 @@ Respond in JSON format:
     let backgroundImage: string | null = null;
     let backgroundType = 'contextual-color';
     
-    try {
-      backgroundImage = await generateBackgroundImage(
-        archetype, 
-        userInput, 
-        parsedResponse.response, 
-        parsedResponse.quote,
-        0
-      );
-      if (backgroundImage) {
-        backgroundType = 'dalle';
+    // Check if AI background generation is allowed
+    if (canGenerateAI) {
+      try {
+        backgroundImage = await generateBackgroundImage(
+          archetypeName, 
+          userInput, 
+          parsedResponse.response, 
+          parsedResponse.quote,
+          0
+        );
+        if (backgroundImage) {
+          backgroundType = 'dalle';
+        }
+      } catch (dalleError) {
+        console.log('🎨 DALL-E failed, using contextual color background...');
+        // Generate contextual background based on emotions and archetype
+        const { getContextualBackground } = await import('./gemini');
+        backgroundImage = getContextualBackground(userInput, archetypeName);
+        backgroundType = 'contextual-color';
       }
-    } catch (dalleError) {
-      console.log('🎨 DALL-E failed, using contextual color background...');
+    } else {
+      console.log('🎨 AI background generation blocked - using contextual color background');
       // Generate contextual background based on emotions and archetype
       const { getContextualBackground } = await import('./gemini');
-      backgroundImage = getContextualBackground(userInput, archetype);
+      backgroundImage = getContextualBackground(userInput, archetypeName);
       backgroundType = 'contextual-color';
     }
 
-    const archetypeData = archetypes[archetype];
+    const archetypeData = archetypes[archetypeName];
     if (!archetypeData) {
-      throw new Error(`Unknown archetype: ${archetype}`);
+      throw new Error(`Unknown archetype: ${archetypeName}`);
     }
 
     const result: ArchetypeData = {
@@ -896,7 +919,7 @@ Respond in JSON format:
       fullMessage: parsedResponse.fullMessage || parsedResponse.response || 'Your journey matters, and so do you.',
       quote: parsedResponse.quote || 'Growth happens in the spaces between who you were and who you\'re becoming.',
       tags: parsedResponse.tags || ['wisdom', 'growth', 'reflection'],
-      backgroundImage: backgroundImage || createDefaultBackground(archetype),
+      backgroundImage: backgroundImage || createDefaultBackground(archetypeName),
       backgroundType: backgroundType
     };
 
@@ -910,15 +933,15 @@ Respond in JSON format:
     if (error.message?.includes('quota') || error.message?.includes('billing') || error.status === 429) {
       console.log('🔄 OpenAI quota exceeded, switching to Gemini...');
       const { generateSubliminalResponseWithGemini } = await import('./gemini');
-      return generateSubliminalResponseWithGemini(userInput, archetype);
+      return generateSubliminalResponseWithGemini(userInput, archetypeName);
     }
     
     // For any other error, also fall back to Gemini
     console.log('🔄 OpenAI failed, falling back to Gemini...');
     const { generateSubliminalResponseWithGemini } = await import('./gemini');
-    return generateSubliminalResponseWithGemini(userInput, archetype);
+    return generateSubliminalResponseWithGemini(userInput, archetypeName);
   }
-};
+}
 
 function getFallbackResponse(archetype: any, userInput: string): ArchetypeData {
   // Generate archetype-specific fallback responses that match the original natural personalities
