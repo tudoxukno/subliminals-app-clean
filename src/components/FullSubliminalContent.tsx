@@ -145,6 +145,7 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
     }
     
     const hinderingPatterns = [
+      // DIRECT SUICIDAL IDEATION
       'kill myself', 'end my life', 'take my own life', 'commit suicide', 
       'want to die', 'wish i was dead', 'better off dead', 'end it all',
       'suicide', 'suicidal', 'want to disappear forever', 'cease to exist',
@@ -154,6 +155,8 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       'going to kill myself', 'planning to die', 'done with life',
       'thinking about suicide', 'considering suicide', 'want out of this life',
       'dont want to live anymore', 'don\'t want to live anymore', 'dont want to live',
+      
+      // END IT ALL VARIATIONS
       'feel like ending it all', 'ending it all', 'want to end everything',
       'end it all', 'end everything', 'end this all', 'just end it all',
       'want to end it all', 'i want to end it all', 'want to just end it all',
@@ -163,6 +166,8 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       'have to end it all', 'might end it all', 'could end it all',
       'feel like ending it all', 'thinking about ending it all',
       'considering ending it all', 'planning to end it all',
+      
+      // DISAPPEAR VARIATIONS
       'want to disappear', 'wish i could disappear', 'want to just disappear',
       'wish i could just disappear', 'should just disappear', 'need to disappear',
       'going to disappear', 'gonna disappear', 'wanna disappear',
@@ -170,6 +175,8 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       'want to disappear forever', 'wish i could disappear forever',
       'should disappear forever', 'vanish forever', 'fade away',
       'invisible forever', 'gone forever', 'erased from existence',
+      
+      // DON'T WANT TO LIVE VARIATIONS
       'dont want to live', 'don\'t want to live', 'do not want to live',
       'dont want to live anymore', 'don\'t want to live anymore',
       'do not want to live anymore', 'dont wanna live', 'don\'t wanna live',
@@ -177,11 +184,15 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       'cant live like this', 'can\'t live like this', 'cannot live like this',
       'dont want to be alive', 'don\'t want to be alive',
       'wish i wasnt alive', 'wish i wasn\'t alive', 'wish i was never alive',
+      
+      // SELF-HARM PATTERNS
       'hurt myself', 'harm myself', 'cut myself', 'cutting myself',
       'self harm', 'self-harm', 'want to cut', 'going to cut',
       'thinking about cutting', 'need to cut', 'deserve to be hurt',
       'should hurt myself', 'want to hurt myself', 'make myself bleed',
       'punish myself', 'deserve pain', 'need to feel pain',
+      
+      // WORTHLESSNESS PATTERNS
       'everyone would be better off without me', 'better off without me',
       'world would be better without me', 'wish i was never born',
       'wish i never existed', 'shouldnt exist', 'regret being born',
@@ -190,13 +201,113 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       'shouldnt be here', 'don\'t belong here', 'dont belong here',
       'nobody would miss me', 'no one would miss me', 'wouldnt be missed',
       'nobody would care', 'no one would care', 'nobody cares',
+      
+      // SELF-HATRED
       'hate myself', 'hate my life', 'disgusted with myself',
       'worthless', 'useless', 'pathetic', 'failure',
       'cant do anything right', 'mess everything up', 'ruin everything',
       'lost cause', 'hopeless case', 'beyond help',
+      
+      // OVERWHELM PATTERNS
       'mental breakdown', 'losing my mind', 'going crazy',
       'cant cope', 'cant handle', 'overwhelmed completely',
-      'drowning', 'suffocating', 'trapped forever'
+      'drowning', 'suffocating', 'trapped forever',
+      
+      // METAPHORICAL/CODED LANGUAGE
+      'check out', 'tap out', 'throw in the towel', 'give up the ghost',
+      'cash in my chips', 'call it quits', 'bow out', 'exit stage left',
+      'peace out forever', 'signing off', 'logging out permanently',
+      'going to the light', 'crossing over', 'final exit',
+      'last chapter', 'the end', 'closing the book', 'final curtain',
+      'lights out', 'game over', 'power down', 'shut down',
+      'pull the plug', 'flip the switch', 'turn off the lights',
+      'close my eyes forever', 'go to sleep forever', 'eternal rest',
+      'permanent vacation', 'final journey', 'one way trip',
+      'no return ticket', 'burning bridges', 'point of no return',
+      
+      // SLANG/INTERNET LANGUAGE
+      'kms', 'kill me now', 'delete myself', 'uninstall life',
+      'ctrl alt delete myself', 'factory reset', 'hard reset',
+      'format my hard drive', 'blue screen of death', 'system shutdown',
+      'rage quit life', 'respawn irl', 'log off permanently',
+      'account deletion', 'permanent ban from life', 'self destruct',
+      'nuke myself', 'blow my brains out', 'eat a bullet',
+      'drink bleach', 'take pills', 'overdose', 'od',
+      
+      // METHODS REFERENCES
+      'jump off', 'hang myself', 'hanging', 'rope', 'noose',
+      'bridge jumping', 'tall building', 'train tracks',
+      'carbon monoxide', 'gas', 'pills', 'overdose',
+      'razor blade', 'knife', 'gun', 'bullet',
+      'poison', 'toxic', 'lethal dose',
+      
+      // EMOTIONAL/PSYCHOLOGICAL INDICATORS
+      'empty inside', 'hollow', 'numb', 'broken beyond repair',
+      'shattered', 'destroyed', 'ruined', 'damaged goods',
+      'waste of space', 'burden', 'toxic person', 'poison',
+      'virus', 'disease', 'cancer', 'parasite',
+      'should have died', 'why am i still here', 'accident i survived',
+      'failed suicide', 'unsuccessful attempt', 'botched it',
+      
+      // FINALITY LANGUAGE
+      'final decision', 'last resort', 'no other choice',
+      'only way out', 'escape plan', 'exit strategy',
+      'permanent solution', 'forever sleep', 'eternal peace',
+      'never wake up', 'close my eyes and never open them',
+      'stop breathing', 'heart stop beating', 'cease existing',
+      
+      // PREPARATION LANGUAGE
+      'writing notes', 'goodbye letters', 'final messages',
+      'last words', 'funeral plans', 'will and testament',
+      'giving away belongings', 'saying goodbyes', 'tying up loose ends',
+      'clearing browser history', 'deleting accounts', 'final preparations',
+      
+      // TIMING INDICATORS
+      'tonight', 'tomorrow', 'this weekend', 'soon',
+      'after this', 'when i get home', 'once everyone leaves',
+      'perfect time', 'right moment', 'when the time comes',
+      
+      // RESEARCH/PLANNING LANGUAGE
+      'how to', 'best way to', 'easiest method', 'painless way',
+      'quick death', 'instant', 'guaranteed method', 'foolproof',
+      'researching methods', 'looking up ways', 'suicide methods',
+      
+      // MASKED/SUBTLE LANGUAGE
+      'taking a permanent break', 'long sleep', 'going away forever',
+      'wont be around much longer', 'last time you see me',
+      'remember me fondly', 'take care of my things',
+      'watch over my pet', 'look after mom',
+      
+      // DESPERATION LANGUAGE
+      'cant take it anymore', 'breaking point', 'last straw',
+      'edge of the cliff', 'about to snap', 'losing it',
+      'spiraling down', 'rock bottom', 'pit of despair',
+      'darkness consuming me', 'void', 'abyss',
+      
+      // ISOLATION LANGUAGE
+      'all alone', 'nobody understands', 'completely isolated',
+      'no one to turn to', 'no way out', 'trapped',
+      'corner', 'backed into corner', 'nowhere to run',
+      
+      // HOPELESSNESS
+      'no hope', 'hopeless', 'pointless', 'meaningless',
+      'whats the point', 'why bother', 'nothing matters',
+      'never get better', 'always be like this', 'permanent damage',
+      
+      // PAIN DESCRIPTORS
+      'unbearable pain', 'torture', 'agony', 'suffering',
+      'cant take the pain', 'pain never stops', 'constant pain',
+      'emotional pain', 'heart breaking', 'soul crushing',
+      
+      // COMPARISON LANGUAGE
+      'everyone else is better off', 'dont deserve to live',
+      'taking up space', 'oxygen thief', 'waste of life',
+      'should have been someone else', 'wrong person survived',
+      
+      // EUPHEMISMS
+      'go to a better place', 'find peace', 'end the suffering',
+      'stop the pain', 'make it stop', 'turn off the noise',
+      'silence the voices', 'quiet the storm', 'still the chaos'
     ];
 
     const getLevenshteinDistance = (str1: string, str2: string): number => {
@@ -219,34 +330,64 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       return matrix[str2.length][str1.length];
     };
 
+    // Enhanced pattern matching with distributed detection
     const hasHinderingContent = hinderingPatterns.some(pattern => {
+      // Direct pattern matching
       if (normalizedInput.includes(pattern)) {
         return true;
       }
       
-      if (pattern.includes('kill myself') || pattern.includes('end my life') || 
-          pattern.includes('suicide') || pattern.includes('want to die')) {
+      // Enhanced distributed word detection for critical patterns
+      const criticalPatterns = [
+        'kill myself', 'end my life', 'suicide', 'want to die', 'end it all',
+        'disappear forever', 'dont want to live', 'hurt myself', 'hate myself'
+      ];
+      
+      if (criticalPatterns.includes(pattern)) {
         const patternWords = pattern.split(' ');
         const inputWords = normalizedInput.split(' ');
         let matchCount = 0;
+                 let foundPositions: number[] = [];
         
-        patternWords.forEach(word => {
-          if (inputWords.includes(word) || 
-              inputWords.includes(word.replace('cant', 'cannot')) ||
-              inputWords.includes(word.replace('im', 'i am'))) {
-            matchCount++;
+        patternWords.forEach((word, index) => {
+          const wordVariations = [
+            word,
+            word.replace('cant', 'cannot'),
+            word.replace('im', 'i am'),
+            word.replace('dont', 'do not'),
+            word.replace('wont', 'will not'),
+            word.replace('shouldnt', 'should not'),
+            word.replace('couldnt', 'could not'),
+            word.replace('wouldnt', 'would not')
+          ];
+          
+          for (let i = 0; i < inputWords.length; i++) {
+            if (wordVariations.includes(inputWords[i]) || 
+                getLevenshteinDistance(inputWords[i], word) <= 1) {
+              matchCount++;
+              foundPositions.push(i);
+              break;
+            }
           }
         });
         
-        if (matchCount >= Math.max(2, Math.ceil(patternWords.length * 0.7))) {
-          return true;
+        // Allow for distributed words but require most key words to be present
+        if (matchCount >= Math.max(2, Math.ceil(patternWords.length * 0.8))) {
+          // Check if words are reasonably close (within 20 words of each other)
+          if (foundPositions.length >= 2) {
+            const maxDistance = Math.max(...foundPositions) - Math.min(...foundPositions);
+            if (maxDistance <= 20) {
+              return true;
+            }
+          }
         }
       }
       
+      // Typo tolerance for shorter phrases
       const words = pattern.split(' ');
       if (words.length <= 3) {
         for (const word of normalizedInput.split(' ')) {
-          if (getLevenshteinDistance(word, pattern) <= 2 && word.length >= 4) {
+          if (getLevenshteinDistance(word, pattern.replace(/\s/g, '')) <= 2 && word.length >= 4) {
             return true;
           }
         }
@@ -255,9 +396,27 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       return false;
     });
 
-    return hasHinderingContent;
+    // Additional checks for abbreviations and coded language
+    const codeWords = ['kms', 'ctb', 'sui', 'sewer slide', 'toaster bath'];
+    const hasCodeWords = codeWords.some(code => normalizedInput.includes(code));
+    
+    // Check for concerning combinations even if individual words aren't triggers
+    const concerningCombinations = [
+      ['pain', 'stop', 'forever'], ['tired', 'fighting', 'give up'],
+      ['break', 'cant', 'anymore'], ['end', 'suffering', 'now'],
+      ['peace', 'finally', 'rest'], ['escape', 'only', 'way'],
+      ['solution', 'permanent', 'problem'], ['better', 'without', 'me'],
+      ['goodbye', 'world', 'cruel'], ['note', 'final', 'goodbye']
+    ];
+    
+    const hasConcerningCombination = concerningCombinations.some(combo => {
+      return combo.every(word => normalizedInput.includes(word));
+    });
+
+    return hasHinderingContent || hasCodeWords || hasConcerningCombination;
   };
 
+  // SYSTEMATIC MULTI-LAYER CRISIS DETECTION
   const detectCrisisLevel = (): CrisisLevel => {
     const fullContent = archetypeData.fullMessage || archetypeData.response || '';
     
@@ -275,45 +434,243 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
       .replace(/\s+/g, ' ')
       .trim();
     
-    const crisisPatterns = [
-      'going to kill myself tonight', 'im going to kill myself', 'planning to kill myself',
-      'have a plan to', 'going to do it tonight', 'ready to do it',
-      'tonight is the night', 'this is it', 'goodbye world',
-      'cant take another day', 'done with everything', 'no way out',
-      'nobody can stop me', 'made up my mind', 'final decision',
-      'writing my note', 'said my goodbyes', 'ready to go'
-    ];
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // COMPREHENSIVE CRISIS DETECTION SYSTEM - SYSTEMATIC APPROACH
+    // ═══════════════════════════════════════════════════════════════════════════════
     
-    const hasCrisisContent = crisisPatterns.some(pattern => 
-      normalizedInput.includes(pattern)
-    );
+    // TIER 3 (CRISIS): IMMEDIATE TIMELINE + INTENT DETECTION
+    const detectImmediateCrisis = (): boolean => {
+      const words = normalizedInput.split(' ');
+      
+      // Core intent indicators (what they want to do)
+      const intentIndicators = [
+        'kill myself', 'kill my self', 'end my life', 'take my life', 'commit suicide',
+        'end it all', 'end everything', 'do it', 'finish it', 'go through with it'
+      ];
+      
+      // Timeline indicators (when they plan to do it)
+      const timelineIndicators = [
+        'tonight', 'today', 'now', 'soon', 'tomorrow', 'this weekend', 'after work',
+        'when i get home', 'in a few hours', 'before morning', 'this evening'
+      ];
+      
+      // Future action phrases (how they express future intent)
+      const futureActionPhrases = [
+        'going to', 'gonna', 'about to', 'ready to', 'planning to', 'going to just',
+        'gonna just', 'about to just', 'ready to just', 'planning to just'
+      ];
+      
+      // Method 1: Check for timeline + intent in same sentence (flexible matching)
+      for (const timeline of timelineIndicators) {
+        if (normalizedInput.includes(timeline)) {
+          for (const intent of intentIndicators) {
+            // Check if intent appears anywhere in the text (allows for extra words)
+            if (normalizedInput.includes(intent)) {
+              return true;
+            }
+            // Also check for distributed words like "kill" and "myself" separately
+            if (intent.includes(' ')) {
+              const intentWords = intent.split(' ');
+              const allWordsPresent = intentWords.every(word => 
+                words.some(inputWord => inputWord.includes(word) || word.includes(inputWord))
+              );
+              if (allWordsPresent) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      
+      // Method 2: Check for future action + intent + timeline combinations
+      for (const futureAction of futureActionPhrases) {
+        if (normalizedInput.includes(futureAction)) {
+          for (const timeline of timelineIndicators) {
+            if (normalizedInput.includes(timeline)) {
+              // If we have "going to" and a timeline, look for any self-harm intent
+              const selfHarmWords = ['kill', 'end', 'die', 'suicide', 'harm', 'hurt'];
+              const selfWords = ['myself', 'my self', 'me'];
+              
+              const hasSelfHarm = selfHarmWords.some(word => words.includes(word));
+              const refersSelf = selfWords.some(phrase => 
+                normalizedInput.includes(phrase) || 
+                words.some(word => phrase.split(' ').every(part => word.includes(part)))
+              );
+              
+              if (hasSelfHarm && refersSelf) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      
+      // Method 3: Specific high-risk phrases (exact matching)
+      const immediateCrisisPatterns = [
+        'going to kill myself tonight', 'gonna kill myself tonight', 'killing myself tonight',
+        'going to kill myself today', 'gonna kill myself today', 'killing myself today',
+        'going to end it tonight', 'gonna end it tonight', 'ending it tonight',
+        'going to end it today', 'gonna end it today', 'ending it today',
+        'going to do it tonight', 'gonna do it tonight', 'doing it tonight',
+        'going to do it today', 'gonna do it today', 'doing it today',
+        'about to kill myself', 'ready to kill myself', 'planning to kill myself',
+        'going to just kill myself', 'gonna just kill myself', 'going to just end it',
+        'ready to die', 'ready to go', 'time to go', 'this is it', 'goodbye world',
+        'have a plan', 'plan to kill myself', 'method chosen', 'everything ready',
+        'pills ready', 'rope ready', 'gun ready', 'bridge picked', 'building chosen',
+        'writing my note', 'suicide note ready', 'said my goodbyes', 'final goodbyes',
+        'giving away my things', 'clearing out room', 'final preparations',
+        'cant wait anymore', 'doing it right now', 'happening now',
+        'final decision made', 'mind made up', 'no going back', 'point of no return'
+      ];
+      
+      return immediateCrisisPatterns.some(pattern => normalizedInput.includes(pattern));
+    };
     
-    if (hasCrisisContent) {
-      return 'crisis';
-    }
+    // TIER 2 (ELEVATED): INTENT WITHOUT IMMEDIATE TIMELINE
+    const detectElevatedConcern = (): boolean => {
+      // Intent patterns showing future planning without specific timeline
+      const elevatedIntentPatterns = [
+        'gonna kill myself', 'going to kill myself', 'want to kill myself',
+        'planning to kill myself', 'thinking about killing myself', 'considering killing myself',
+        'might kill myself', 'probably kill myself', 'should kill myself', 'could kill myself',
+        'tempted to kill myself', 'feel like killing myself', 'would kill myself',
+        'gonna end it all', 'going to end it all', 'want to end it all', 'feel like ending it all',
+        'thinking about ending it all', 'considering ending it all', 'might end it all',
+        'gonna end it', 'going to end it', 'want to end it', 'might end it',
+        'considering suicide', 'thinking about suicide', 'might commit suicide',
+        'researching suicide', 'looking up methods', 'wondering how to', 'curious about methods',
+        'want to disappear forever', 'wish i could disappear forever', 'need to disappear'
+      ];
+      
+      // Strong distress patterns indicating elevated risk
+      const elevatedDistressPatterns = [
+        'cant take this anymore', 'cant go on', 'cant handle this', 'cant take much more',
+        'breaking point', 'about to break', 'overwhelmed beyond repair', 'drowning in pain',
+        'want to give up', 'ready to give up', 'giving up on everything', 'tired of fighting',
+        'done fighting', 'cant fight anymore', 'no fight left', 'throwing in the towel',
+        'no point anymore', 'whats the point', 'why bother', 'meaningless existence',
+        'tired of living', 'exhausted from living', 'sick of existing', 'done with life',
+        'want out', 'need to escape', 'desperate to escape', 'trapped forever'
+      ];
+      
+      return elevatedIntentPatterns.some(pattern => normalizedInput.includes(pattern)) ||
+             elevatedDistressPatterns.some(pattern => normalizedInput.includes(pattern));
+    };
     
-    const elevatedConcernPatterns = [
-      'want to end it all', 'feel like ending it all', 'want to end everything',
-      'want to disappear', 'wish i could disappear', 'want to just disappear',
-      'cant take this anymore', 'cant go on', 'cant handle this',
-      'want to give up', 'ready to give up', 'giving up on everything',
-      'no point anymore', 'whats the point', 'why bother',
-      'tired of living', 'exhausted from living', 'done with life',
-      'want out', 'need to escape', 'trapped forever',
-      'cant keep going', 'done fighting', 'tired of fighting'
-    ];
+    // DISTRIBUTED WORD ANALYSIS - Enhanced scoring system
+    const analyzeDistributedWords = (): 'crisis' | 'elevated' | 'hindering' | null => {
+      const words = normalizedInput.split(' ');
+      
+      // Crisis-level distributed patterns (immediate threat)
+      const crisisKeywords = {
+        intent: ['kill', 'suicide', 'die', 'death', 'end', 'finish', 'harm'],
+        self: ['myself', 'me', 'self'],
+        timeline: ['tonight', 'today', 'now', 'soon', 'tomorrow', 'this'],
+        planning: ['plan', 'ready', 'prepared', 'method', 'way', 'how', 'going', 'gonna'],
+        finality: ['goodbye', 'final', 'last', 'over', 'done', 'note']
+      };
+      
+      const elevatedKeywords = {
+        intent: ['kill', 'suicide', 'die', 'end', 'disappear', 'escape', 'harm'],
+        self: ['myself', 'me', 'self'],
+        future: ['gonna', 'going', 'want', 'thinking', 'considering', 'might', 'would'],
+        distress: ['cant', 'overwhelmed', 'breaking', 'tired', 'exhausted', 'done', 'hate']
+      };
+      
+      // Enhanced crisis scoring with more weight on timeline + intent combinations
+      let crisisScore = 0;
+      const hasIntent = crisisKeywords.intent.some(word => words.includes(word));
+      const hasSelf = crisisKeywords.self.some(word => words.some(w => w.includes(word)));
+      const hasTimeline = crisisKeywords.timeline.some(word => words.includes(word));
+      const hasPlanning = crisisKeywords.planning.some(word => words.includes(word));
+      const hasFinality = crisisKeywords.finality.some(word => words.includes(word));
+      
+      if (hasIntent) crisisScore += 3;  // Increased weight
+      if (hasSelf) crisisScore += 2;    // Increased weight  
+      if (hasTimeline) crisisScore += 4; // High weight for timeline
+      if (hasPlanning) crisisScore += 3; // High weight for planning
+      if (hasFinality) crisisScore += 2;
+      
+      // Special bonus for intent + timeline + self combination
+      if (hasIntent && hasSelf && hasTimeline) {
+        crisisScore += 3; // Bonus points for this dangerous combination
+      }
+      
+      if (crisisScore >= 7) return 'crisis'; // Lowered threshold but higher individual weights
+      
+      // Elevated scoring
+      let elevatedScore = 0;
+      const hasElevatedIntent = elevatedKeywords.intent.some(word => words.includes(word));
+      const hasElevatedSelf = elevatedKeywords.self.some(word => words.some(w => w.includes(word)));
+      const hasFuture = elevatedKeywords.future.some(word => words.includes(word));
+      const hasDistress = elevatedKeywords.distress.some(word => words.includes(word));
+      
+      if (hasElevatedIntent) elevatedScore += 2;
+      if (hasElevatedSelf) elevatedScore += 1;
+      if (hasFuture) elevatedScore += 2;
+      if (hasDistress) elevatedScore += 1;
+      
+      if (elevatedScore >= 4) return 'elevated';
+      
+      return null;
+    };
     
-    const hasElevatedConcern = elevatedConcernPatterns.some(pattern => 
-      normalizedInput.includes(pattern)
-    );
+    // EUPHEMISM AND METAPHOR DETECTION
+    const detectEuphemisms = (): { level: 'crisis' | 'elevated' | 'hindering' | null } => {
+      const metaphors = {
+        crisis: [
+          'check out permanently', 'final exit', 'one way trip', 'no return ticket',
+          'lights out forever', 'game over for good', 'permanent logout', 'final shutdown',
+          'closing the book forever', 'last chapter tonight', 'curtains closing', 'show ending'
+        ],
+        elevated: [
+          'check out', 'tap out', 'throw in the towel', 'give up the ghost',
+          'cash in my chips', 'call it quits', 'bow out', 'exit stage left',
+          'lights out', 'game over', 'power down', 'shut down',
+          'peace out forever', 'signing off', 'logging out permanently'
+        ],
+        hindering: [
+          'fade away', 'disappear', 'vanish', 'invisible',
+          'delete myself', 'uninstall life', 'factory reset',
+          'broken beyond repair', 'damaged goods', 'waste of space'
+        ]
+      };
+      
+      for (const pattern of metaphors.crisis) {
+        if (normalizedInput.includes(pattern)) return { level: 'crisis' };
+      }
+      for (const pattern of metaphors.elevated) {
+        if (normalizedInput.includes(pattern)) return { level: 'elevated' };
+      }
+      for (const pattern of metaphors.hindering) {
+        if (normalizedInput.includes(pattern)) return { level: 'hindering' };
+      }
+      
+      return { level: null };
+    };
     
-    if (hasElevatedConcern) {
-      return 'elevated';
-    }
+    // RUN ALL DETECTION LAYERS IN ORDER OF SEVERITY
     
-    if (detectHinderingEntry()) {
-      return 'hindering';
-    }
+    // 1. IMMEDIATE CRISIS CHECK (Tier 3)
+    if (detectImmediateCrisis()) return 'crisis';
+    
+    // 2. DISTRIBUTED WORD ANALYSIS FOR CRISIS
+    const distributedResult = analyzeDistributedWords();
+    if (distributedResult === 'crisis') return 'crisis';
+    
+    // 3. EUPHEMISM CHECK FOR CRISIS
+    const euphemismResult = detectEuphemisms();
+    if (euphemismResult.level === 'crisis') return 'crisis';
+    
+    // 4. ELEVATED CONCERN CHECK (Tier 2)
+    if (detectElevatedConcern()) return 'elevated';
+    if (distributedResult === 'elevated') return 'elevated';
+    if (euphemismResult.level === 'elevated') return 'elevated';
+    
+    // 5. HINDERING CHECK (Tier 1) - fallback to existing comprehensive detection
+    if (detectHinderingEntry()) return 'hindering';
+    if (euphemismResult.level === 'hindering') return 'hindering';
     
     return 'normal';
   };
