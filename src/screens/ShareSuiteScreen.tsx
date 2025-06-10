@@ -253,6 +253,28 @@ const ShareSuiteScreen = () => {
   const handleShare = async () => {
     if (!cardRef.current) return;
     
+    // Check if freemium user is trying to share with AI background
+    const isPremiumUser = subscriptionService.hasUnlimitedAccess();
+    const hasAIBackground = selectedBackground?.isAIGenerated === true;
+    
+    if (!isPremiumUser && hasAIBackground) {
+      Alert.alert(
+        'Premium Feature',
+        'Sharing with AI-generated backgrounds requires a premium subscription. Please select a different background or upgrade to premium.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Upgrade', 
+            onPress: () => {
+              setUpgradeModalTrigger('background_regeneration');
+              setShowUpgradeModal(true);
+            }
+          }
+        ]
+      );
+      return;
+    }
+    
     try {
       setIsSharing(true);
 

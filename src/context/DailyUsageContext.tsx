@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSubscription } from './SubscriptionContext';
+import subscriptionService from '../services/subscriptionService';
 
 interface DailyUsageContextType {
   dailyUsage: number;
@@ -18,6 +18,7 @@ interface DailyUsageContextType {
   resetDailyUsageForTesting: () => Promise<void>;
   checkAndShowBannerOnHomeReturn: () => void;
   resetBannerForLimitAttempt: () => void;
+  refreshSubscriptionStatus: () => Promise<void>;
   // AI Background tracking
   aiBackgroundUsage: number;
   aiBackgroundLimit: number;
@@ -49,11 +50,11 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lastDismissedLevel, setLastDismissedLevel] = useState<string | null>(null);
   const [shouldShowBannerOnHomeReturn, setShouldShowBannerOnHomeReturn] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{ isActive: boolean; tier: 'free' | 'monthly' | 'annual'; willRenew: boolean }>({ isActive: false, tier: 'free', willRenew: false });
+  const [isSubscriptionLoaded, setIsSubscriptionLoaded] = useState(false);
   
-  // Use default subscription state for free tier functionality
-  const isPremiumUser = false;
-  const isSubscriptionLoaded = true;
-  const subscriptionInfo = { isActive: false, tier: 'free' as const, willRenew: false };
+  // Get premium status from subscription service
+  const isPremiumUser = subscriptionService.hasUnlimitedAccess();
 
   useEffect(() => {
     const initialize = async () => {
@@ -62,6 +63,17 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
         await AsyncStorage.removeItem('@subliminals:daily_usage');
       } catch (error) {
         console.error('Error cleaning legacy data:', error);
+      }
+      
+      // Load subscription status
+      try {
+        const subscription = await subscriptionService.getCurrentSubscription();
+        setSubscriptionInfo(subscription);
+        setIsSubscriptionLoaded(true);
+        console.log('📱 Subscription loaded in DailyUsageContext:', subscription);
+      } catch (error) {
+        console.error('Error loading subscription:', error);
+        setIsSubscriptionLoaded(true); // Still mark as loaded to proceed
       }
       
       await loadDailyUsage();
@@ -129,9 +141,16 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       currentUsage: dailyUsage,
       dailyLimit: dailyLimit,
       isLimitReached: dailyUsage >= dailyLimit,
+      isPremiumUser: isPremiumUser,
       subscriptionInfo: subscriptionInfo,
-      willIncrement: subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && dailyUsage < dailyLimit
+      willIncrement: !isPremiumUser && subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && dailyUsage < dailyLimit
     });
+    
+    // Premium users have unlimited access - don't track usage
+    if (isPremiumUser) {
+      console.log('📊 PREMIUM USER: Usage tracking skipped for unlimited access');
+      return;
+    }
     
     // HARD CAP: Never allow usage to exceed the limit
     if (dailyUsage >= dailyLimit) {
@@ -216,9 +235,16 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       currentUsage: aiBackgroundUsage,
       aiBackgroundLimit: aiBackgroundLimit,
       isLimitReached: aiBackgroundUsage >= aiBackgroundLimit,
+      isPremiumUser: isPremiumUser,
       subscriptionInfo: subscriptionInfo,
-      willIncrement: subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && aiBackgroundUsage < aiBackgroundLimit
+      willIncrement: !isPremiumUser && subscriptionInfo.tier === 'free' && !subscriptionInfo.isActive && aiBackgroundUsage < aiBackgroundLimit
     });
+    
+    // Premium users have unlimited AI backgrounds - don't track usage
+    if (isPremiumUser) {
+      console.log('🎨 PREMIUM USER: AI background usage tracking skipped for unlimited access');
+      return;
+    }
     
     // HARD CAP: Never allow usage to exceed the limit
     if (aiBackgroundUsage >= aiBackgroundLimit) {
@@ -321,8 +347,8 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     };
   };
 
-  const isLimitReached = dailyUsage >= dailyLimit;
-  const canGenerate = !isLimitReached;
+  const isLimitReached = !isPremiumUser && dailyUsage >= dailyLimit;
+  const canGenerate = isPremiumUser || !isLimitReached;
   const canGenerateAIBackground = isPremiumUser || aiBackgroundUsage < aiBackgroundLimit;
   
   // Determine if banner should show
@@ -410,6 +436,16 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
+  const refreshSubscriptionStatus = async (): Promise<void> => {
+    try {
+      const subscription = await subscriptionService.getCurrentSubscription();
+      setSubscriptionInfo(subscription);
+      console.log('🔄 Subscription status refreshed:', subscription);
+    } catch (error) {
+      console.error('Error refreshing subscription:', error);
+    }
+  };
+
   const value: DailyUsageContextType = {
     dailyUsage,
     dailyLimit,
@@ -429,6 +465,7 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
     resetDailyUsageForTesting,
     checkAndShowBannerOnHomeReturn,
     resetBannerForLimitAttempt,
+    refreshSubscriptionStatus,
     // AI Background tracking
     aiBackgroundUsage,
     aiBackgroundLimit,

@@ -196,6 +196,9 @@ const ArchetypeSelectionScreen = () => {
   const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds'>('archetype_switching');
   const [upgradeModalArchetype, setUpgradeModalArchetype] = useState<string | undefined>(undefined);
   const [isGeneratingFullContent, setIsGeneratingFullContent] = useState(false);
+  
+  // Check premium status at component level
+  const isPremiumUser = subscriptionService.hasUnlimitedAccess();
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 2): { truncated: string; needsTruncation: boolean } => {
@@ -464,8 +467,8 @@ const ArchetypeSelectionScreen = () => {
       return;
     }
     
-    // Check if this archetype is locked (freemium limitation)
-    const isLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
+    // Check if this archetype is locked (freemium limitation - doesn't apply to premium users)
+    const isLocked = !isPremiumUser && selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
     
     if (isLocked) {
       // Show upgrade modal for freemium users
@@ -559,9 +562,9 @@ const ArchetypeSelectionScreen = () => {
               const canAccessArchetype = subscriptionService.canAccessArchetype(archetype);
               const isPremiumLocked = isPremiumArchetype && !canAccessArchetype;
               
-              // Check freemium archetype switching limitation
-              const isFreemiumLocked = selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
-              const isSelected = selectedArchetypeInSession === archetype;
+              // Check freemium archetype switching limitation (doesn't apply to premium users)
+              const isFreemiumLocked = !isPremiumUser && selectedArchetypeInSession && selectedArchetypeInSession !== archetype;
+              const isSelected = !isPremiumUser && selectedArchetypeInSession === archetype;
               
               // Daily limit state should only apply when starting a completely NEW entry (no selectedArchetypeInSession)
               // If user has selectedArchetypeInSession, they're returning from a valid entry (1-3) and can access their selection

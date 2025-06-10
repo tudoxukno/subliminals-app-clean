@@ -86,8 +86,8 @@ const BackgroundThumbnail: React.FC<{
     }
   };
 
-  // Determine if regeneration is locked
-  const isRegenerateLocked = background.isAIGenerated && (!canRegenerateAI || !isPremiumUser);
+  // Determine if regeneration is locked - always unlocked for premium users
+  const isRegenerateLocked = background.isAIGenerated && !isPremiumUser;
 
   // Handle AI-generated background that's still loading
   if (background.isAIGenerated && background.isLoading) {
@@ -145,13 +145,14 @@ const BackgroundThumbnail: React.FC<{
           {background.label && (
             <View style={styles.labelContainer}>
               <Text style={styles.labelText}>
-                {background.label === 'AI Generated' ? 'AI' : background.label}
+                {background.isAIGenerated && isPremiumUser ? 'AI' : 
+                 background.label === 'AI Generated' ? 'AI' : background.label}
               </Text>
             </View>
           )}
           
-          {/* Show background type badge - but not for AI backgrounds when regenerate is locked (PRO indicator is shown instead) */}
-          {background.backgroundType && !(background.isAIGenerated && isRegenerateLocked) && (
+          {/* Show background type badge - but not for AI backgrounds when user is premium or when regenerate is locked (PRO indicator is shown instead) */}
+          {background.backgroundType && !(background.isAIGenerated && (isPremiumUser || isRegenerateLocked)) && (
             <View style={[
               styles.typeBadge,
               background.backgroundType === 'ai-generated' ? styles.aiBadge : styles.contextualBadge
@@ -162,8 +163,8 @@ const BackgroundThumbnail: React.FC<{
             </View>
           )}
           
-          {/* Show premium indicator if needed */}
-          {background.isPremiumFeature && (
+          {/* Show premium indicator if needed - but not for premium users on AI backgrounds */}
+          {background.isPremiumFeature && !(background.isAIGenerated && isPremiumUser) && (
             <View style={styles.premiumBadge}>
               <Text style={styles.premiumBadgeText}>PRO</Text>
             </View>
@@ -391,6 +392,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#4A90E2', // Blue background to match archetype selection
     borderColor: '#4A90E2',
     borderWidth: 1,
+    // Center horizontally
+    right: 'auto',
+    left: '50%',
+    marginLeft: -24, // Adjusted to find the sweet spot
   },
   aiLoadingContainer: {
     position: 'absolute',

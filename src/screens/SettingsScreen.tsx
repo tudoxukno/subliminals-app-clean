@@ -114,7 +114,7 @@ const SettingsScreen = () => {
   const [currentSubscriptionState, setCurrentSubscriptionState] = useState<'free' | 'premium'>('free');
   const [showDebugModal, setShowDebugModal] = useState(false);
 
-  const { resetDailyUsageForTesting, resetAIBackgroundUsageForTesting, dailyUsage, dailyLimit, aiBackgroundUsage, aiBackgroundLimit, canGenerateAIBackground } = useDailyUsage();
+  const { resetDailyUsageForTesting, resetAIBackgroundUsageForTesting, dailyUsage, dailyLimit, aiBackgroundUsage, aiBackgroundLimit, canGenerateAIBackground, refreshSubscriptionStatus } = useDailyUsage();
 
   useEffect(() => {
     loadStorageInfo();
@@ -147,12 +147,14 @@ const SettingsScreen = () => {
         // Switch to premium
         subscriptionService.simulatePremium('monthly');
         setCurrentSubscriptionState('premium');
-        Alert.alert('✅ Premium Activated', 'You now have unlimited daily entries and can test the banner states.');
+        await refreshSubscriptionStatus();
+        Alert.alert('✅ Premium Activated', 'You now have unlimited daily entries and premium features are unlocked.');
       } else {
         // Switch to free
         subscriptionService.resetToFree();
         setCurrentSubscriptionState('free');
-        Alert.alert('🔄 Free Account', 'You now have 3 daily entries and will see the usage banner.');
+        await refreshSubscriptionStatus();
+        Alert.alert('🔄 Free Account', 'You now have 3 daily entries and free tier limitations apply.');
       }
     } catch (error) {
       console.error('Error toggling subscription:', error);
