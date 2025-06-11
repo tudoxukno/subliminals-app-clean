@@ -232,6 +232,40 @@ const archetypeVisualStyles = {
       elements: "warm light, soft shadows, embracing atmosphere, protective vibes",
       aesthetic: "emotional support, warm hugs, unconditional love"
     }
+  ],
+  PrayerWarrior: [
+    {
+      name: "Sacred Light",
+      style: "warm golden light streaming through windows, peaceful sanctuary spaces",
+      colors: "warm gold, soft cream, gentle amber, peaceful whites",
+      mood: "serene, sacred, peaceful",
+      elements: "natural light streams, quiet spaces, peaceful textures, calm environments",
+      aesthetic: "spiritual sanctuary, peaceful worship, divine light"
+    },
+    {
+      name: "Armor of Faith",
+      style: "strong protective imagery, spiritual warfare themes, victory banners",
+      colors: "deep gold, royal purple, strong blues, victorious whites",
+      mood: "strong, protected, victorious",
+      elements: "shield imagery, banner textures, strong foundations, protective elements",
+      aesthetic: "spiritual warfare, divine protection, faith victory"
+    },
+    {
+      name: "Wilderness Journey",
+      style: "desert landscapes, journey paths, spiritual pilgrimage imagery",
+      colors: "desert gold, warm sand, sunrise colors, journey blues",
+      mood: "journeying, faithful, persevering",
+      elements: "path textures, horizon lines, journey markers, pilgrimage vibes",
+      aesthetic: "spiritual journey, wilderness seasons, faith walk"
+    },
+    {
+      name: "Prayer Garden",
+      style: "peaceful garden spaces, quiet meditation areas, natural prayer environments",
+      colors: "garden greens, peaceful blues, natural earth tones, gentle whites",
+      mood: "contemplative, peaceful, grounded",
+      elements: "garden textures, natural peace, quiet corners, prayer spaces",
+      aesthetic: "prayer life, contemplation, spiritual gardens"
+    }
   ]
 };
 
@@ -1006,7 +1040,8 @@ const getSolidColorBackground = (archetype: string): string => {
     Realist: '#9013FE',     // Purple
     Poet: '#FF6B6B',        // Soft red
     BestFriend: '#FFD93D',  // Warm yellow
-    Coach: '#FF8500'        // Athletic orange
+    Coach: '#FF8500',       // Athletic orange
+    PrayerWarrior: '#FFD700' // Divine gold
   };
   
   const color = colors[archetype as keyof typeof colors] || '#6B73FF';
@@ -1033,7 +1068,8 @@ function createDefaultBackground(archetype: string): string {
     'Realist': '#9013FE',
     'Poet': '#FF6B6B',
     'Best Friend': '#FFD93D',
-    'Coach': '#FF8500'
+    'Coach': '#FF8500',
+    'Prayer Warrior': '#FFD700'
   };
   
   const color = colors[archetype as keyof typeof colors] || '#4A90E2';

@@ -145,7 +145,7 @@ class UsageTrackingService {
       }
 
       // Check if Best Friend is premium (adjust as needed)
-      const premiumArchetypes = ['Best Friend'];
+      const premiumArchetypes = ['Best Friend', 'Coach', 'Prayer Warrior'];
       if (premiumArchetypes.includes(archetype)) {
         return { canView: false, reason: 'premium_archetype' };
       }

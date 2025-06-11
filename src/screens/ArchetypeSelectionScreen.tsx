@@ -69,6 +69,10 @@ const ARCHETYPES = {
   Coach: {
     icon: '🧢',
     tags: ["TACTICAL", "MOTIVATIONAL", "DIRECT"]
+  },
+  'Prayer Warrior': {
+    icon: '🙏🏾',
+    tags: ["FAITHFUL", "WISE", "SPIRIT-LED"]
   }
 };
 

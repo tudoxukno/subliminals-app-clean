@@ -163,6 +163,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
     const archetypeIcons: { [key: string]: string } = {
       'Best Friend': '🫶',
       'Coach': '🧢',
+      'Prayer Warrior': '🙏🏾',
       'Mirror': '🪞',
       'Therapist': '🫂',
       'Realist': '🪓',

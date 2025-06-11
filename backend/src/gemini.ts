@@ -904,7 +904,8 @@ export function getContextualBackground(userInput: string, archetypeName: string
     'Realist': ['#9013FE', '#BA68C8', '#DDA0DD', '#E6E6FA'],
     'Poet': ['#FF6B6B', '#FF8E8E', '#FFA07A', '#FFB6C1'],
     'Best Friend': ['#FFD93D', '#FFE066', '#FFF8DC', '#FFFACD'],
-    'Coach': ['#FF8500', '#FF9500', '#FFA500', '#FFB347']
+    'Coach': ['#FF8500', '#FF9500', '#FFA500', '#FFB347'],
+    'Prayer Warrior': ['#FFD700', '#FFF8DC', '#F0E68C', '#FFFACD']
   };
 
   // Emotion-based color overrides
