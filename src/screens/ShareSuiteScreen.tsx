@@ -36,6 +36,7 @@ import { ScrollHint } from '../components/ScrollHint';
 import subscriptionService from '../services/subscriptionService';
 import { useDailyUsage } from '../context/DailyUsageContext';
 import { UpgradeModal } from '../components/UpgradeModal';
+import { getCurrentFeaturedBackgrounds, isBackgroundFeatured, getFeaturedUntilDate } from '../services/featuredBackgrounds';
 
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -78,33 +79,95 @@ const ShareSuiteScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'background_regeneration'>('background_regeneration');
+  const [upgradeModalTrigger, setUpgradeModalTrigger] = useState<'background_regeneration' | 'premium_backgrounds'>('background_regeneration');
 
   const { canGenerateAIBackground, incrementAIBackgroundUsage } = useDailyUsage();
 
-  // Create background options with AI-generated background as first option
-  const [backgroundOptions, setBackgroundOptions] = useState<Background[]>(() => [
-    { id: 0, source: null }, // None option
-    // Always include AI-generated slot - either with image or loading state
-    { 
-      id: -1, 
-      source: null, 
-      url: archetypeData.backgroundImage, 
-      label: archetypeData.styleName || 'AI',
-      isAIGenerated: true,
-      backgroundType: archetypeData.backgroundType || 'ai-generated',
-      styleIndex: archetypeData.styleIndex || 0,
-      styleName: archetypeData.styleName || 'AI',
-      isLoading: !archetypeData.backgroundImage // Show loading if no background yet
-    },
-    { id: 1, source: require('../../assets/images/background1.png') },
-    { id: 2, source: require('../../assets/images/background2.png') },
-    { id: 3, source: require('../../assets/images/background3.png') },
-    { id: 4, source: require('../../assets/images/background4.png') },
-    { id: 5, source: require('../../assets/images/background5.png') },
-    { id: 6, source: require('../../assets/images/background6.png') },
-    { id: 7, source: require('../../assets/images/background7.png') },
-  ]);
+  // Create background options with featured rotation system
+  const [backgroundOptions, setBackgroundOptions] = useState<Background[]>(() => {
+    const featuredRotation = getCurrentFeaturedBackgrounds();
+    const featuredUntil = getFeaturedUntilDate();
+    const isPremiumUser = subscriptionService.hasUnlimitedAccess();
+    
+    // Static mapping of all background images (Metro bundler requirement)
+    const backgroundSources: { [key: number]: any } = {
+      1: require('../../assets/images/background1.png'),
+      2: require('../../assets/images/background2.png'),
+      3: require('../../assets/images/background3.png'),
+      4: require('../../assets/images/background4.png'),
+      5: require('../../assets/images/background5.png'),
+      6: require('../../assets/images/background6.png'),
+      7: require('../../assets/images/background7.png'),
+      8: require('../../assets/images/background8.png'),
+      9: require('../../assets/images/background9.png'),
+      10: require('../../assets/images/background10.png'),
+      11: require('../../assets/images/background11.png'),
+      12: require('../../assets/images/background12.png'),
+      13: require('../../assets/images/background13.png'),
+      14: require('../../assets/images/background14.png'),
+      15: require('../../assets/images/background15.png'),
+      16: require('../../assets/images/background16.png'),
+      17: require('../../assets/images/background17.png'),
+      18: require('../../assets/images/background18.png'),
+    };
+    
+    // Create array of all premium background IDs (6-18)
+    const allPremiumIds = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+    const featuredIds = featuredRotation.backgroundIds;
+    const lockedIds = allPremiumIds.filter(id => !featuredIds.includes(id));
+    
+
+
+    // Base array with None and AI-generated options
+    const baseOptions: Background[] = [
+      { id: 0, source: null }, // None option
+      // Always include AI-generated slot - either with image or loading state
+      { 
+        id: -1, 
+        source: null, 
+        url: archetypeData.backgroundImage, 
+        label: archetypeData.styleName || 'AI',
+        isAIGenerated: true,
+        backgroundType: archetypeData.backgroundType || 'ai-generated',
+        styleIndex: archetypeData.styleIndex || 0,
+        styleName: archetypeData.styleName || 'AI',
+        isLoading: !archetypeData.backgroundImage, // Show loading if no background yet
+        isPremiumFeature: !isPremiumUser
+      },
+      // Free static backgrounds 1-5 (always available)
+      { id: 1, source: backgroundSources[1] },
+      { id: 2, source: backgroundSources[2] },
+      { id: 3, source: backgroundSources[3] },
+      { id: 4, source: backgroundSources[4] },
+      { id: 5, source: backgroundSources[5] },
+    ];
+
+    // Add featured backgrounds in slots 6-10 (FREE during rotation)
+    featuredIds.forEach((featuredId, index) => {
+      const slotId = 6 + index; // Slots 6, 7, 8, 9, 10
+      baseOptions.push({
+        id: slotId,
+        source: backgroundSources[featuredId],
+        isFeatured: !isPremiumUser, // Show featured label for freemium users
+        featuredUntil: !isPremiumUser ? featuredUntil : undefined,
+        isPremiumFeature: false, // Featured backgrounds are FREE to use during rotation
+        originalId: featuredId // Track the original background ID for debugging
+      });
+    });
+    
+    // Add remaining premium backgrounds that are NOT featured (locked premium)
+    lockedIds.forEach((lockedId, index) => {
+      const slotId = 11 + index; // Start from slot 11
+      baseOptions.push({
+        id: slotId,
+        source: backgroundSources[lockedId],
+        isPremiumFeature: !isPremiumUser,
+        originalId: lockedId // Track the original background ID for debugging
+      });
+    });
+
+    return baseOptions;
+  });
   
   const [viewMode, setViewMode] = useState<ViewMode>('FULL_SUBLIMINAL');
   const [selectedBackground, setSelectedBackground] = useState<Background | null>(
@@ -143,6 +206,8 @@ const ShareSuiteScreen = () => {
       );
     }
   }, [archetypeData.backgroundImage, archetypeData.styleName, archetypeData.styleIndex]);
+
+  // Featured backgrounds are initialized on component mount via useState
 
   const formatShareContent = () => {
     if (viewMode === 'QUOTE_ONLY') {
@@ -253,20 +318,29 @@ const ShareSuiteScreen = () => {
   const handleShare = async () => {
     if (!cardRef.current) return;
     
-    // Check if freemium user is trying to share with AI background
+    // Check if freemium user is trying to share with premium content
     const isPremiumUser = subscriptionService.hasUnlimitedAccess();
     const hasAIBackground = selectedBackground?.isAIGenerated === true;
+    const isPremiumBackground = selectedBackground?.isPremiumFeature === true;
     
-    if (!isPremiumUser && hasAIBackground) {
+    // Only block sharing for truly premium content (not featured backgrounds)
+    if (!isPremiumUser && (hasAIBackground || isPremiumBackground)) {
+      let backgroundType = 'premium';
+      if (hasAIBackground) backgroundType = 'AI-generated';
+      else if (isPremiumBackground) backgroundType = 'premium';
+      
+      // Determine the appropriate upgrade trigger based on background type
+      const upgradeModalTrigger = hasAIBackground ? 'background_regeneration' : 'premium_backgrounds';
+      
       Alert.alert(
         'Premium Feature',
-        'Sharing with AI-generated backgrounds requires a premium subscription. Please select a different background or upgrade to premium.',
+        `Sharing with ${backgroundType} backgrounds requires a premium subscription. Please select a different background or upgrade to premium.`,
         [
           { text: 'Cancel', style: 'cancel' },
           { 
             text: 'Upgrade', 
             onPress: () => {
-              setUpgradeModalTrigger('background_regeneration');
+              setUpgradeModalTrigger(upgradeModalTrigger);
               setShowUpgradeModal(true);
             }
           }

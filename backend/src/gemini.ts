@@ -37,6 +37,37 @@ const geminiResponseCache = new Map<string, ArchetypeData>();
 
 // Detect if an entry is emotionally hindering (heavy, spiraling, self-critical but not crisis-level)
 function detectHinderingEntry(userInput: string): boolean {
+  const inputLower = userInput.toLowerCase().trim();
+  
+  // CRITICAL PATTERNS - aligned with frontend
+  const criticalPatterns = [
+    // Death ideation - THE MISSING ONES
+    'i want to die', 'want to die', 'i wanna die', 'wanna die',
+    'wish i was dead', 'wish i were dead', 'better off dead',
+    'don\'t want to be alive', 'tired of being alive', 'tired of living',
+    
+    // Suicide ideation
+    'want to kill myself', 'thinking about killing myself', 'considering killing myself',
+    'planning to kill myself', 'might kill myself', 'should kill myself',
+    'tempted to kill myself', 'feel like killing myself',
+    
+    // End life ideation  
+    'want to end my life', 'thinking about ending my life', 'considering ending my life',
+    'want to end it all', 'thinking about ending it all', 'considering suicide',
+    
+    // Immediate crisis patterns
+    'kill myself tonight', 'kill myself today', 'end my life tonight', 'end my life today',
+    'about to kill myself', 'ready to kill myself', 'doing it now'
+  ];
+  
+  // Check critical patterns first - these should ALWAYS be flagged
+  for (const pattern of criticalPatterns) {
+    if (inputLower.includes(pattern)) {
+      return true;
+    }
+  }
+  
+  // Existing hindering patterns
   const hinderingKeywords = [
     // Emotional overwhelm
     'overwhelmed', 'drowning', 'suffocating', 'crushing', 'exhausted', 'drained', 'burnt out', 'burnout',
@@ -50,10 +81,6 @@ function detectHinderingEntry(userInput: string): boolean {
     'hopeless', 'no point', 'what\'s the point', 'stuck', 'trapped', 'nothing changes', 'never get better',
     'giving up', 'pointless', 'meaningless', 'empty', 'numb', 'lost', 'alone', 'lonely',
     
-    // Dark thoughts (not crisis but concerning)
-    'wish I wasn\'t here', 'don\'t want to be here', 'tired of living', 'tired of existing',
-    'everyone would be better without me', 'burden', 'waste of space',
-    
     // Emotional heaviness
     'can\'t stop crying', 'crying all the time', 'heavy', 'weight on my chest', 'dark cloud',
     'everything is wrong', 'nothing is working', 'falling behind', 'left behind'
@@ -63,26 +90,29 @@ function detectHinderingEntry(userInput: string): boolean {
     'I hate myself', 'I\'m worthless', 'I\'m useless', 'I\'m a failure', 'I\'m pathetic',
     'I can\'t do anything right', 'I mess everything up', 'I\'m not good enough',
     'I\'m falling apart', 'I\'m drowning', 'I can\'t cope', 'I\'m spiraling',
-    'I\'m stuck', 'I\'m trapped', 'I\'m lost', 'I\'m alone', 'I\'m tired of living',
-    'I don\'t want to be here', 'everyone would be better without me', 'I\'m a burden'
+    'I\'m stuck', 'I\'m trapped', 'I\'m lost', 'I\'m alone', 
+    'everyone would be better without me', 'I\'m a burden'
   ];
   
-  const inputLower = userInput.toLowerCase();
-  
-  // Check for exact phrases first (more reliable)
+  // Check for exact phrases
   for (const phrase of hinderingPhrases) {
     if (inputLower.includes(phrase.toLowerCase())) {
       return true;
     }
   }
   
-  // Check for individual keywords (need multiple for accuracy)
-  const foundKeywords = hinderingKeywords.filter(keyword => 
-    inputLower.includes(keyword.toLowerCase())
+  // Check for keywords with word boundary matching
+  const keywordRegexes = hinderingKeywords.map(keyword => 
+    new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
   );
   
-  // Return true if multiple hindering indicators are present
-  return foundKeywords.length >= 2;
+  for (const regex of keywordRegexes) {
+    if (regex.test(userInput)) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 // Generate cache key
@@ -125,20 +155,58 @@ export async function generateSubliminalResponseWithGemini(
     try {
       // Extract JSON from potential markdown formatting
       const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
-      const cleanText = jsonMatch[1] || text;
+      let cleanText = jsonMatch[1] || text;
+      
+      // Clean up any potential Unicode or escape sequence issues
+      cleanText = cleanText.trim();
+      
+      // Handle potential BOM or other invisible characters
+      cleanText = cleanText.replace(/^\uFEFF/, '');
       
       // Try parsing the cleaned text
-      parsedResponse = JSON.parse(cleanText.trim());
+      parsedResponse = JSON.parse(cleanText);
       console.log('✅ Successfully parsed Gemini JSON response');
     } catch (parseError) {
       console.log('⚠️ Failed to parse JSON, extracting text manually');
-      // Fallback: extract meaningful content manually
-      parsedResponse = {
-        response: text.split('\n')[0] || 'Your journey matters, and so do you.',
-        fullMessage: text || 'Your journey matters, and so do you.',
-        quote: 'Growth happens in the spaces between who you were and who you\'re becoming.',
-        tags: ['wisdom', 'growth', 'reflection']
-      };
+      console.log('⚠️ Parse error:', parseError);
+      console.log('⚠️ Problematic text:', text.substring(0, 200) + '...');
+      
+      // Enhanced fallback: try to extract JSON-like content manually
+      try {
+        // Look for response field in the text
+        const responseMatch = text.match(/"response":\s*"([^"]*(?:\\.[^"]*)*)"/);
+        const fullMessageMatch = text.match(/"fullMessage":\s*"([^"]*(?:\\.[^"]*)*)"/);
+        const quoteMatch = text.match(/"quote":\s*"([^"]*(?:\\.[^"]*)*)"/);
+        const tagsMatch = text.match(/"tags":\s*\[(.*?)\]/);
+        const isHinderingMatch = text.match(/"isHinderingEntry":\s*(true|false)/);
+        
+        if (responseMatch || fullMessageMatch) {
+          parsedResponse = {
+            response: responseMatch ? responseMatch[1].replace(/\\"/g, '"') : 'Your journey matters, and so do you.',
+            fullMessage: fullMessageMatch ? fullMessageMatch[1].replace(/\\"/g, '"') : (responseMatch ? responseMatch[1].replace(/\\"/g, '"') : 'Your journey matters, and so do you.'),
+            quote: quoteMatch ? quoteMatch[1].replace(/\\"/g, '"') : 'Growth happens in the spaces between who you were and who you\'re becoming.',
+            tags: tagsMatch ? JSON.parse('[' + tagsMatch[1] + ']') : ['wisdom', 'growth', 'reflection'],
+            isHinderingEntry: isHinderingMatch ? isHinderingMatch[1] === 'true' : false
+          };
+          console.log('✅ Successfully extracted content manually');
+        } else {
+          // Last resort fallback
+          parsedResponse = {
+            response: text.split('\n')[0] || 'Your journey matters, and so do you.',
+            fullMessage: text || 'Your journey matters, and so do you.',
+            quote: 'Growth happens in the spaces between who you were and who you\'re becoming.',
+            tags: ['wisdom', 'growth', 'reflection']
+          };
+        }
+      } catch (extractError) {
+        console.log('⚠️ Manual extraction also failed, using basic fallback');
+        parsedResponse = {
+          response: 'Your journey matters, and so do you.',
+          fullMessage: 'Your journey matters, and so do you.',
+          quote: 'Growth happens in the spaces between who you were and who you\'re becoming.',
+          tags: ['wisdom', 'growth', 'reflection']
+        };
+      }
     }
 
     // Generate contextual background using Gemini or fallback to solid colors
@@ -343,7 +411,7 @@ Your voice is current, supportive, and celebratory. Vary your openings naturally
 
 Be incredibly supportive and make them feel seen. Use current phrases naturally when they fit, but don't force slang. 
 
-CRITICAL: NEVER use placeholder text like "[insert memory here]" or "[shared experience]". Act like you naturally know them with warm familiarity, but don't invent fake specific memories. Reference their patterns naturally like "you always..." or "look how you...".${hinderingContext}
+CRITICAL: NEVER use placeholder text like "[insert memory here]", "[shared experience]", "[insert vague, non-specific but relatable challenge]", "[that crazy work project]", or "[that awful family drama]". Act like you naturally know them with warm familiarity, but don't invent fake specific memories. Reference their patterns naturally like "you always..." or "look how you..." but keep it general and authentic.${hinderingContext}
 
 ${isHinderingEntry ?
 `HINDERING ENTRY - Extra Care Instructions:

@@ -25,6 +25,9 @@ export type Background = {
   isLoading?: boolean; // Flag to indicate if the AI background is being generated
   isPremiumFeature?: boolean; // Flag to indicate if this requires premium
   canRegenerate?: boolean; // Flag to indicate if user can regenerate this background
+  isFeatured?: boolean; // Flag to indicate if this is a featured premium background
+  featuredUntil?: string; // Date string for when featured status expires
+  originalId?: number; // Track the original background ID for rotation debugging
 };
 
 type BackgroundPickerProps = {
@@ -78,10 +81,15 @@ const BackgroundThumbnail: React.FC<{
   };
 
   const handleMainPress = () => {
-    // If this is a locked AI background, trigger upgrade instead of selection
-    if (background.isAIGenerated && isRegenerateLocked && onUpgrade) {
+    // Handle different types of premium backgrounds:
+    // - AI backgrounds (when locked): trigger upgrade immediately
+    // - Featured backgrounds: allow selection (they're free during rotation)
+    // - Premium backgrounds 11-18: allow preview, restrict sharing only
+    
+    if ((background.isAIGenerated && isRegenerateLocked) && onUpgrade) {
       onUpgrade();
     } else {
+      // Allow selection for all other cases (including featured and premium backgrounds)
       onPress();
     }
   };
@@ -142,11 +150,13 @@ const BackgroundThumbnail: React.FC<{
               onError={handleImageError}
             />
           )}
-          {background.label && (
+          {(background.label || (background.isFeatured && !isPremiumUser)) && (
             <View style={styles.labelContainer}>
               <Text style={styles.labelText}>
                 {background.isAIGenerated && isPremiumUser ? 'AI' : 
-                 background.label === 'AI Generated' ? 'AI' : background.label}
+                 background.label === 'AI Generated' ? 'AI' :
+                 background.isFeatured && !isPremiumUser ? `Free until ${background.featuredUntil}` :
+                 background.label}
               </Text>
             </View>
           )}
@@ -163,10 +173,13 @@ const BackgroundThumbnail: React.FC<{
             </View>
           )}
           
-          {/* Show premium indicator if needed - but not for premium users on AI backgrounds */}
+          {/* Show premium indicator if needed - only for truly premium content */}
           {background.isPremiumFeature && !(background.isAIGenerated && isPremiumUser) && (
             <View style={styles.premiumBadge}>
-              <Text style={styles.premiumBadgeText}>PRO</Text>
+              <View style={styles.lockedRegenerateContent}>
+                <Ionicons name="diamond" size={10} color="#fff" />
+                <Text style={styles.lockedRegenerateText}>PRO</Text>
+              </View>
             </View>
           )}
 
@@ -442,10 +455,22 @@ const styles = StyleSheet.create({
   premiumBadge: {
     position: 'absolute',
     top: 4,
-    right: 4,
-    padding: 4,
-    borderRadius: 8,
-    backgroundColor: '#FF0000',
+    right: 'auto',
+    left: '50%',
+    marginLeft: -24, // Center horizontally like the AI regenerate button
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#4A90E2', // Blue background to match AI regenerate button
+    borderWidth: 1,
+    borderColor: '#4A90E2',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   premiumBadgeText: {
     color: '#fff',

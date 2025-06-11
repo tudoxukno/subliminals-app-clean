@@ -11,95 +11,66 @@ const containsExactPhrase = (text: string, phrase: string): boolean => {
   return text.toLowerCase().includes(phrase.toLowerCase());
 };
 
-// POSITIVE CONTENT FILTER - Applied at ALL levels
+// POSITIVE CONTENT FILTER - More restrictive to avoid false positives
 const isPositiveContent = (userInput: string): boolean => {
   const normalizedInput = userInput.toLowerCase().trim();
   
-  // Strong positive indicators that should NEVER be flagged
-  const positivePatterns = [
-    // Achievement and pride
-    'proud of', 'accomplished', 'achieved', 'succeeded', 'did well', 'did great',
-    'feeling good', 'feeling great', 'feeling amazing', 'feeling wonderful',
-    'feel good', 'feel great', 'feel amazing', 'feel wonderful', 'feel happy',
-    'feel blessed', 'feel grateful', 'feel thankful', 'feel lucky', 'feel fortunate',
+  // STRICT positive indicators - must be clearly positive with no ambiguity
+  const strongPositivePatterns = [
+    // Explicit achievement and pride
+    'proud of myself', 'accomplished today', 'achieved my goal', 'succeeded at',
+    'feeling amazing', 'feeling wonderful', 'feeling fantastic', 'feeling incredible',
+    'feel amazing', 'feel wonderful', 'feel fantastic', 'feel incredible',
+    'best day ever', 'perfect day', 'amazing day today',
     
-    // Growth and progress
-    'getting better', 'feeling better', 'improving', 'growing', 'learning',
-    'making progress', 'moving forward', 'positive changes', 'good day',
-    'great day', 'amazing day', 'wonderful day', 'perfect day',
+    // Explicit gratitude
+    'so grateful for', 'so thankful for', 'blessed to have', 'lucky to have',
+    'appreciate so much', 'grateful that', 'thankful that',
     
-    // Gratitude and appreciation
-    'grateful for', 'thankful for', 'appreciate', 'blessed to have',
-    'lucky to have', 'fortunate to', 'glad that', 'happy that',
+    // Clear positive states
+    'love my life', 'love being alive', 'excited about life', 'happy to be here',
+    'glad to be alive', 'grateful to be here',
     
-    // Love and relationships
-    'love my', 'love how', 'love when', 'love that', 'love being',
-    'excited about', 'looking forward', 'can\'t wait', 'excited for',
-    
-    // Success and completion
-    'finished', 'completed', 'done with', 'accomplished today',
-    'successful', 'won', 'passed', 'graduated', 'promoted',
-    
-    // Positive emotions
-    'joy', 'happiness', 'delight', 'contentment', 'peace',
-    'confident', 'strong', 'capable', 'resilient', 'hopeful',
-    'optimistic', 'positive', 'uplifted', 'inspired', 'motivated',
-    
-    // Self-acceptance and contentment
-    'content with who i am', 'content with myself', 'finding myself',
-    'more and more content', 'embracing who i am', 'accepting myself',
-    'self acceptance', 'comfortable with myself', 'at peace with myself',
-    'happy with who i am', 'proud of who i am', 'love who i am',
-    'becoming who i want to be', 'growing into myself', 'self love',
-    
-    // Productive and positive states
-    'productive', 'feel productive', 'feeling productive', 'being productive',
-    'getting things done', 'accomplished a lot', 'made good progress',
-    'on top of things', 'handling everything well', 'managing well'
+    // Explicit joy expressions  
+    'filled with joy', 'overflowing with happiness', 'pure happiness',
+    'genuinely happy', 'truly happy', 'really happy right now'
   ];
   
-  // Positive contexts that provide safety
-  const positiveContexts = [
-    'what i did today', 'what i accomplished', 'what i achieved',
-    'how far i\'ve come', 'the progress i\'ve made', 'my growth',
-    'this moment', 'right now', 'today was', 'this experience'
-  ];
-  
-  // Check for positive patterns
-  const hasPositivePattern = positivePatterns.some(pattern => 
+  // Only return true if input has STRONG positive indicators AND no negative context
+  const hasStrongPositive = strongPositivePatterns.some(pattern => 
     containsExactPhrase(normalizedInput, pattern)
   );
   
-  // Check for positive contexts
-  const hasPositiveContext = positiveContexts.some(context =>
-    containsExactPhrase(normalizedInput, context)
-  );
+  // Check for negative context that would override positive
+  const hasNegativeContext = [
+    'want to die', 'kill myself', 'end my life', 'suicide', 'hurt myself',
+    'hate myself', 'worthless', 'hopeless', 'can\'t go on', 'give up'
+  ].some(negative => containsExactPhrase(normalizedInput, negative));
   
-  return hasPositivePattern || hasPositiveContext;
+  return hasStrongPositive && !hasNegativeContext;
 };
 
 // CRISIS DETECTION (Tier 3) - Immediate threat with timeline
 const detectImmediateCrisis = (userInput: string): boolean => {
-  // If content is positive, it cannot be crisis
-  if (isPositiveContent(userInput)) {
-    return false;
-  }
+  // Skip positive content check here - let crisis patterns take precedence
   
   const normalizedInput = userInput.toLowerCase().trim();
   
-  // High-precision crisis patterns - exact phrase matching only
+  // High-precision crisis patterns - immediate threat
   const immediateCrisisPatterns = [
-    // Immediate timeline + intent
+    // Immediate timeline + intent - EXPANDED
     'kill myself tonight', 'kill myself today', 'going to kill myself tonight',
     'going to kill myself today', 'gonna kill myself tonight', 'gonna kill myself today',
     'end my life tonight', 'end my life today', 'ending my life tonight',
     'ending my life today', 'commit suicide tonight', 'commit suicide today',
+    'kill myself right now', 'end my life right now', 'doing it right now',
     
     // Immediate action phrases
     'about to kill myself', 'ready to kill myself', 'doing it tonight',
     'doing it today', 'doing it now', 'about to do it', 'ready to do it',
+    'time to kill myself', 'time to end it', 'ready to end it all',
     
-    // Planning and method references with timeline
+    // Method + timeline
     'have the pills ready', 'have the rope ready', 'have the gun ready',
     'picked the bridge', 'chosen the building', 'found the method',
     'plan is ready', 'everything is ready', 'time to go',
@@ -120,36 +91,42 @@ const detectImmediateCrisis = (userInput: string): boolean => {
   );
 };
 
-// ELEVATED CONCERN DETECTION (Tier 2) - Intent without immediate timeline
+// ELEVATED CONCERN DETECTION (Tier 2) - Intent without immediate timeline - FIXED
 const detectElevatedConcern = (userInput: string): boolean => {
-  // If content is positive, it cannot be elevated
-  if (isPositiveContent(userInput)) {
-    return false;
-  }
+  // Skip positive content check here - let crisis patterns take precedence
   
   const normalizedInput = userInput.toLowerCase().trim();
   
-  // Elevated concern patterns - future intent without specific timeline
+  // THE CRITICAL MISSING PATTERNS - FIXED
   const elevatedIntentPatterns = [
-    // Future suicide ideation
+    // Basic death ideation - THE ONES WE WERE MISSING
+    'i want to die', 'want to die', 'i wanna die', 'wanna die',
+    'wish i was dead', 'wish i were dead', 'better off dead',
+    'don\'t want to be alive', 'tired of being alive', 'tired of living',
+    
+    // Suicide ideation - existing patterns
     'want to kill myself', 'thinking about killing myself', 'considering killing myself',
     'planning to kill myself', 'might kill myself', 'should kill myself',
     'tempted to kill myself', 'feel like killing myself', 'wish i could kill myself',
     
-    // Future self-harm
+    // End life ideation
     'want to end my life', 'thinking about ending my life', 'considering ending my life',
     'want to end it all', 'thinking about ending it all', 'considering suicide',
     'researching suicide methods', 'looking up suicide methods', 'how to kill myself',
     
-    // Strong distress with escapism
+    // Escape and disappearing
     'want to disappear forever', 'wish i could disappear', 'want to vanish',
     'need to escape this pain', 'cant take this anymore', 'cant go on like this',
-    'breaking point', 'about to break', 'drowning in despair',
+    'cant take it anymore', 'cant handle this anymore',
     
-    // Giving up language
+    // Severe distress with death themes
+    'breaking point', 'about to break', 'drowning in despair',
     'want to give up on everything', 'ready to give up', 'done fighting',
     'tired of fighting', 'no fight left', 'throwing in the towel permanently',
-    'whats the point of living', 'no point in going on', 'meaningless existence'
+    
+    // Existential crisis
+    'whats the point of living', 'no point in going on', 'meaningless existence',
+    'life has no meaning', 'why am i alive', 'what\'s the point of being alive'
   ];
   
   return elevatedIntentPatterns.some(pattern => 
@@ -157,44 +134,44 @@ const detectElevatedConcern = (userInput: string): boolean => {
   );
 };
 
-// HINDERING DETECTION (Tier 1) - ONLY severe distress, self-harm, or hopelessness
+// HINDERING DETECTION (Tier 1) - Severe distress, self-harm, hopelessness
 const detectHinderingEntry = (userInput: string): boolean => {
-  // If content is positive, it CANNOT be hindering - period
-  if (isPositiveContent(userInput)) {
-    return false;
-  }
+  // Skip positive content check here - let crisis patterns take precedence
   
   const normalizedInput = userInput.toLowerCase().trim();
   
-  // MUCH MORE RESTRICTIVE - Only severe distress patterns
+  // Severe distress patterns - single match required now for sensitivity
   const hinderingPatterns = [
-    // Severe self-harm ideation (not suicide)
+    // Self-harm ideation (not suicide)
     'want to hurt myself', 'thinking about hurting myself', 'considering hurting myself',
     'feel like hurting myself', 'need to hurt myself', 'urge to hurt myself',
+    'want to cut myself', 'thinking about cutting myself', 'urge to cut',
     
     // Severe self-hatred
     'hate myself so much', 'despise myself', 'loathe myself', 'disgusted with myself',
     'worthless piece of shit', 'complete waste of space', 'should never have been born',
+    'hate everything about myself', 'can\'t stand myself',
     
-    // Severe hopelessness with despair
+    // Severe hopelessness
     'no hope left at all', 'completely hopeless', 'hopeless situation', 'never going to get better',
     'trapped with no way out', 'stuck in hell forever', 'doomed to suffer',
+    'nothing will ever change', 'always going to be miserable',
     
-    // Severe emotional crisis
+    // Severe emotional breakdown
     'completely broken', 'falling apart', 'cant function anymore', 'losing my mind',
     'going crazy', 'mental breakdown', 'emotional breakdown', 'cant cope anymore',
+    'completely overwhelmed', 'drowning in pain',
     
     // Severe isolation with despair
-    'nobody would care if i died', 'nobody would miss me', 'better off dead',
-    'world would be better without me', 'burden to everyone', 'everyone hates me'
+    'nobody would care if i died', 'nobody would miss me', 'everyone would be better without me',
+    'world would be better without me', 'burden to everyone', 'everyone hates me',
+    'completely alone in this', 'no one understands me'
   ];
   
-  // Require at least TWO hindering patterns for maximum specificity
-  const matchCount = hinderingPatterns.filter(pattern => 
+  // Only require ONE hindering pattern for maximum sensitivity
+  return hinderingPatterns.some(pattern => 
     containsExactPhrase(normalizedInput, pattern)
-  ).length;
-  
-  return matchCount >= 2;
+  );
 };
 
 // MAIN CRISIS DETECTION FUNCTION
@@ -209,39 +186,24 @@ export const detectCrisisLevel = (userInput: string, backendHinderingFlag?: bool
     return 'normal';
   }
   
-  // NUCLEAR FIX: Explicit positive content check FIRST
-  const input = userInput.toLowerCase().trim().replace(/[.,!?;:\-()[\]{}'"]/g, ' ').replace(/\s+/g, ' ');
-  
-  // Hard-coded positive exit conditions that CANNOT be overridden
-  if (input.includes('proud of') || 
-      input.includes('accomplished') || 
-      input.includes('did well') ||
-      input.includes('feel good') ||
-      input.includes('feel great') ||
-      input.includes('what i did today') ||
-      input.includes('happy about') ||
-      input.includes('excited about')) {
-    return 'normal';
-  }
-  
-  // POSITIVE CONTENT COMPREHENSIVE CHECK
+  // POSITIVE CONTENT CHECK - Only for clearly positive content
   if (isPositiveContent(userInput)) {
     return 'normal';
   }
   
-  // Only proceed with crisis detection if content is NOT positive
+  // Crisis detection hierarchy - explicit order matters
   
-  // 1. Check for immediate crisis (Tier 3)
+  // 1. Check for immediate crisis (Tier 3) - Most severe
   if (detectImmediateCrisis(userInput)) {
     return 'crisis';
   }
   
-  // 2. Check for elevated concern (Tier 2)  
+  // 2. Check for elevated concern (Tier 2) - Intent without timeline
   if (detectElevatedConcern(userInput)) {
     return 'elevated';
   }
   
-  // 3. Check for hindering content (Tier 1)
+  // 3. Check for hindering content (Tier 1) - Severe distress
   if (detectHinderingEntry(userInput)) {
     return 'hindering';
   }

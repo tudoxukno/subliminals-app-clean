@@ -615,9 +615,41 @@ const ArchetypeSelectionScreen = () => {
                     isSelected && styles.selectedCard,
                     isDailyLimitReached && styles.limitReachedCard
                   ]}
-                  onPress={() => handleArchetypeSelect(archetype)}
-                  disabled={isLocked}
-                  activeOpacity={isLocked ? 1 : 0.7}
+                  onPress={() => {
+                    if (isLocked) {
+                      // Handle upgrade modal for locked cards
+                      if (isDailyLimitReached) {
+                        resetBannerForLimitAttempt();
+                        setUpgradeModalTrigger('daily_limit');
+                      } else if (isPremiumLocked) {
+                        setUpgradeModalTrigger('premium_archetype');
+                      } else {
+                        setUpgradeModalTrigger('archetype_switching');
+                      }
+                      setUpgradeModalArchetype(archetype);
+                      setShowUpgradeModal(true);
+                    } else {
+                      // Handle normal archetype selection
+                      handleArchetypeSelect(archetype);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isLocked 
+                      ? `Upgrade to unlock ${archetype} archetype`
+                      : `Select ${archetype} archetype`
+                  }
+                  accessibilityHint={
+                    isLocked
+                      ? (isPremiumLocked 
+                          ? "Double tap to view premium upgrade options"
+                          : isDailyLimitReached 
+                          ? "Double tap to upgrade and continue beyond daily limit"
+                          : "Double tap to upgrade and unlock archetype switching")
+                      : `Double tap to select ${archetype} archetype for your subliminal`
+                  }
                 >
                   <View style={styles.cardContent}>
                     {/* Lock icon in top right corner */}
@@ -693,32 +725,7 @@ const ArchetypeSelectionScreen = () => {
                     </View>
                   </View>
                   {isLocked && (
-                    <TouchableOpacity 
-                      style={styles.lockOverlay}
-                      onPress={() => {
-                        if (isDailyLimitReached) {
-                          resetBannerForLimitAttempt();
-                          setUpgradeModalTrigger('daily_limit');
-                        } else if (isPremiumLocked) {
-                          setUpgradeModalTrigger('premium_archetype');
-                        } else {
-                          setUpgradeModalTrigger('archetype_switching');
-                        }
-                        setUpgradeModalArchetype(archetype);
-                        setShowUpgradeModal(true);
-                      }}
-                      activeOpacity={0.8}
-                      accessible={true}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Upgrade to unlock ${archetype} archetype`}
-                      accessibilityHint={
-                        isPremiumLocked 
-                          ? "Double tap to view premium upgrade options"
-                          : isDailyLimitReached 
-                          ? "Double tap to upgrade and continue beyond daily limit"
-                          : "Double tap to upgrade and unlock archetype switching"
-                      }
-                    >
+                    <View style={styles.lockOverlay}>
                       <LinearGradient
                         colors={['#4A90E2', '#5BA0F2', '#4A90E2']}
                         start={{ x: 0, y: 0 }}
@@ -731,7 +738,7 @@ const ArchetypeSelectionScreen = () => {
                           <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
                         </View>
                       </LinearGradient>
-                    </TouchableOpacity>
+                    </View>
                   )}
                 </TouchableOpacity>
               );

@@ -17,7 +17,7 @@ import subscriptionService, { SubscriptionTier } from '../services/subscriptionS
 interface UpgradeModalProps {
   visible: boolean;
   onClose: () => void;
-  trigger: 'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds' | 'background_regeneration' | 'unlimited_saves' | 'save_limit' | 'general_upgrade';
+  trigger: 'daily_limit' | 'archetype_switching' | 'premium_archetype' | 'ai_backgrounds' | 'background_regeneration' | 'unlimited_saves' | 'save_limit' | 'general_upgrade' | 'premium_backgrounds';
   userInput?: string; // Context for better messaging
   archetypeName?: string; // Which archetype triggered this
 }
@@ -70,6 +70,12 @@ const TRIGGER_MESSAGES = {
     subtitle: 'Get unlimited access to all subliminals and premium archetypes',
     description: 'Upgrade to Premium for unlimited daily entries, all archetypes, AI backgrounds, and exclusive features.',
     icon: '✨',
+  },
+  premium_backgrounds: {
+    title: 'Unlock All Premium Backgrounds',
+    subtitle: 'You\'re enjoying this week\'s featured backgrounds!',
+    description: 'Get permanent access to all 18+ premium backgrounds, AI-generated backgrounds, and unlimited entries. Featured backgrounds rotate weekly - upgrade now to keep them forever!',
+    icon: '🎨',
   },
 };
 
@@ -274,32 +280,65 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
 
               {/* Premium Features Highlight */}
               <View style={styles.featuresHighlight}>
-                <Text style={styles.featuresTitle}>Everything in Premium:</Text>
+                <Text style={styles.featuresTitle}>
+                  {trigger === 'premium_backgrounds' ? 'Get These Backgrounds Forever:' : 'Everything in Premium:'}
+                </Text>
                 <View style={styles.highlightGrid}>
-                  <View style={styles.highlightItem}>
-                    <Ionicons name="infinite" size={20} color="#4CAF50" />
-                    <Text style={styles.highlightText}>Unlimited Daily Subliminals</Text>
-                  </View>
-                  <View style={styles.highlightItem}>
-                    <Ionicons name="people" size={20} color="#4CAF50" />
-                    <Text style={styles.highlightText}>All 6 Archetypes</Text>
-                  </View>
-                  <View style={styles.highlightItem}>
-                    <Ionicons name="swap-horizontal" size={20} color="#4CAF50" />
-                    <Text style={styles.highlightText}>Switch Between Archetypes</Text>
-                  </View>
-                  <View style={styles.highlightItem}>
-                    <Ionicons name="color-palette" size={20} color="#4CAF50" />
-                    <Text style={styles.highlightText}>AI-Generated Backgrounds</Text>
-                  </View>
-                  <View style={styles.highlightItem}>
-                    <Ionicons name="cloud" size={20} color="#4CAF50" />
-                    <Text style={styles.highlightText}>Unlimited Cloud Saves</Text>
-                  </View>
-                  <View style={styles.highlightItem}>
-                    <Ionicons name="flash" size={20} color="#4CAF50" />
-                    <Text style={styles.highlightText}>Premium AI Models</Text>
-                  </View>
+                  {trigger === 'premium_backgrounds' ? (
+                    <>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="images" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>All 18+ Premium Backgrounds</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="time" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>Keep Featured Backgrounds Forever</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="color-palette" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>AI-Generated Custom Backgrounds</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="refresh" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>Unlimited Background Regeneration</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="infinite" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>Unlimited Daily Entries</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="people" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>All 6 Archetypes</Text>
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="infinite" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>Unlimited Daily Subliminals</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="people" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>All 6 Archetypes</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="swap-horizontal" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>Switch Between Archetypes</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="color-palette" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>AI-Generated Backgrounds</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="cloud" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>Unlimited Cloud Saves</Text>
+                      </View>
+                      <View style={styles.highlightItem}>
+                        <Ionicons name="flash" size={20} color="#4CAF50" />
+                        <Text style={styles.highlightText}>Premium AI Models</Text>
+                      </View>
+                    </>
+                  )}
                 </View>
               </View>
 
