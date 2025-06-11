@@ -235,36 +235,52 @@ const archetypeVisualStyles = {
   ],
   PrayerWarrior: [
     {
-      name: "Sacred Light",
-      style: "warm golden light streaming through windows, peaceful sanctuary spaces",
-      colors: "warm gold, soft cream, gentle amber, peaceful whites",
-      mood: "serene, sacred, peaceful",
-      elements: "natural light streams, quiet spaces, peaceful textures, calm environments",
-      aesthetic: "spiritual sanctuary, peaceful worship, divine light"
+      name: "Sacred Sanctuary",
+      style: "warm church sanctuary lighting, stained glass reflections, peaceful worship spaces",
+      colors: "warm gold, deep amber, rich burgundy, peaceful ivory",
+      mood: "reverent, sacred, peaceful",
+      elements: "soft golden light, church architecture, peaceful atmosphere, spiritual warmth",
+      aesthetic: "church sanctuary, sacred spaces, divine presence, spiritual comfort"
     },
     {
-      name: "Armor of Faith",
-      style: "strong protective imagery, spiritual warfare themes, victory banners",
-      colors: "deep gold, royal purple, strong blues, victorious whites",
-      mood: "strong, protected, victorious",
-      elements: "shield imagery, banner textures, strong foundations, protective elements",
-      aesthetic: "spiritual warfare, divine protection, faith victory"
+      name: "Praying Hands",
+      style: "silhouetted praying hands, peaceful prayer gestures, spiritual devotion imagery",
+      colors: "soft gold, warm bronze, gentle amber, peaceful whites",
+      mood: "devotional, prayerful, centered",
+      elements: "prayer silhouettes, gentle lighting, peaceful gestures, spiritual focus",
+      aesthetic: "prayer life, devotional moments, spiritual connection, quiet worship"
     },
     {
-      name: "Wilderness Journey",
-      style: "desert landscapes, journey paths, spiritual pilgrimage imagery",
-      colors: "desert gold, warm sand, sunrise colors, journey blues",
-      mood: "journeying, faithful, persevering",
-      elements: "path textures, horizon lines, journey markers, pilgrimage vibes",
-      aesthetic: "spiritual journey, wilderness seasons, faith walk"
+      name: "Gospel Heritage",
+      style: "warm community gathering spaces, soulful spiritual atmosphere, heritage imagery",
+      colors: "rich gold, warm brown, deep amber, peaceful cream",
+      mood: "soulful, communal, grounded",
+      elements: "community warmth, heritage textures, spiritual gathering, cultural richness",
+      aesthetic: "gospel tradition, spiritual community, cultural heritage, faith legacy"
     },
     {
-      name: "Prayer Garden",
-      style: "peaceful garden spaces, quiet meditation areas, natural prayer environments",
-      colors: "garden greens, peaceful blues, natural earth tones, gentle whites",
-      mood: "contemplative, peaceful, grounded",
-      elements: "garden textures, natural peace, quiet corners, prayer spaces",
-      aesthetic: "prayer life, contemplation, spiritual gardens"
+      name: "Divine Light",
+      style: "heavenly light beams, spiritual illumination, celestial warmth",
+      colors: "brilliant gold, soft white, gentle amber, divine cream",
+      mood: "illuminated, blessed, uplifting",
+      elements: "heavenly rays, divine illumination, spiritual brightness, celestial peace",
+      aesthetic: "divine presence, heavenly light, spiritual illumination, blessed moments"
+    },
+    {
+      name: "Faith Journey",
+      style: "spiritual path imagery, walking in faith, journey of belief",
+      colors: "sunrise gold, journey brown, path amber, hopeful whites",
+      mood: "faithful, journeying, hopeful",
+      elements: "spiritual pathways, faith direction, journey textures, guided steps",
+      aesthetic: "faith walk, spiritual journey, guided path, faithful steps"
+    },
+    {
+      name: "Peaceful Worship",
+      style: "quiet worship moments, peaceful meditation, spiritual reflection spaces",
+      colors: "gentle gold, soft bronze, peaceful amber, calm whites",
+      mood: "peaceful, meditative, centered",
+      elements: "quiet worship, peaceful reflection, spiritual calm, meditative atmosphere",
+      aesthetic: "peaceful worship, spiritual reflection, quiet meditation, centered faith"
     }
   ]
 };

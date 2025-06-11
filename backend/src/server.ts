@@ -54,7 +54,7 @@ app.get('/archetypes', (req: Request, res: Response) => {
 // Fast generation endpoint (text only, no background)
 app.post('/generate-fast', async (req: Request, res: Response) => {
   try {
-    const { userInput, archetype } = req.body as GenerateRequest;
+    const { userInput, archetype, crisisLevel } = req.body as GenerateRequest;
     
     if (!userInput || !archetype) {
       return res.status(400).json({ 
@@ -63,13 +63,20 @@ app.post('/generate-fast', async (req: Request, res: Response) => {
       });
     }
 
+    console.log('🚨 Fast generation with crisis context:', {
+      archetype,
+      crisisLevel,
+      userInput: userInput.substring(0, 50) + '...'
+    });
+
     // Try OpenAI first, fallback to Gemini if it fails
     let response;
     try {
       response = await generateSubliminalResponseFast(userInput, archetype);
     } catch (openaiError) {
       console.log('🔄 OpenAI fast failed, trying Gemini fallback...');
-      response = await generateSubliminalResponseWithGemini(userInput, archetype);
+      // Use Gemini for crisis-appropriate responses  
+      response = await generateSubliminalResponseWithGemini(userInput, archetype, true);
     }
     
     res.json({ success: true, data: response });

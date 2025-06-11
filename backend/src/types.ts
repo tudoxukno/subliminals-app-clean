@@ -16,6 +16,7 @@ export interface GenerateRequest {
   archetype: string;
   canGenerateAI?: boolean; // Permission to generate AI backgrounds
   isPremiumUser?: boolean; // For backend logging and decision making
+  crisisLevel?: 'normal' | 'hindering' | 'elevated' | 'crisis'; // Crisis level detected on frontend
 }
 
 export interface GenerateResponse {
