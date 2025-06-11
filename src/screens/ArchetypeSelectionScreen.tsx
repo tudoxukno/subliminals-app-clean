@@ -26,6 +26,8 @@ import { ArchetypeCardSkeleton } from '../components/ArchetypeCardSkeleton';
 import { useDailyUsage } from '../context/DailyUsageContext';
 import { UpgradeModal } from '../components/UpgradeModal';
 import subscriptionService from '../services/subscriptionService';
+import { detectCrisisLevel } from '../utils/crisisDetection';
+import CrisisModal from '../components/CrisisModal';
 
 const { width, height } = Dimensions.get('window');
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
@@ -149,6 +151,7 @@ type RootStackParamList = {
     };
     selectedArchetypeInSession?: string; // Track selected archetype for freemium locking
     archetypeResponses?: {[key: string]: ArchetypeData}; // Pass all responses for when user goes back
+    crisisInterventionShown?: boolean; // Flag to indicate crisis intervention was already shown
   };
   ShareSuite: {
     userInput: string;
@@ -197,8 +200,32 @@ const ArchetypeSelectionScreen = () => {
   const [upgradeModalArchetype, setUpgradeModalArchetype] = useState<string | undefined>(undefined);
   const [isGeneratingFullContent, setIsGeneratingFullContent] = useState(false);
   
+  // Crisis detection state
+  const [showCrisisModal, setShowCrisisModal] = useState(false);
+  const [crisisLevel, setCrisisLevel] = useState<'normal' | 'hindering' | 'elevated' | 'crisis'>('normal');
+  const [crisisInterventionShown, setCrisisInterventionShown] = useState(false);
+  
   // Check premium status at component level
   const isPremiumUser = subscriptionService.hasUnlimitedAccess();
+
+  // Crisis detection - run immediately when screen loads
+  useEffect(() => {
+    const detectedCrisisLevel = detectCrisisLevel(userInput);
+    setCrisisLevel(detectedCrisisLevel);
+    
+    // Show crisis modal immediately if tier 3 detected
+    if (detectedCrisisLevel === 'crisis') {
+      setShowCrisisModal(true);
+      setCrisisInterventionShown(true);
+    }
+
+    // Debug logging
+    console.log('🚨 CRISIS DETECTION ON ARCHETYPE SCREEN:', {
+      userInput: userInput.substring(0, 50) + (userInput.length > 50 ? '...' : ''),
+      detectedLevel: detectedCrisisLevel,
+      showingModal: detectedCrisisLevel === 'crisis'
+    });
+  }, [userInput]);
 
   // Helper function to truncate user input
   const truncateUserInput = (input: string, maxLines: number = 2): { truncated: string; needsTruncation: boolean } => {
@@ -497,6 +524,8 @@ const ArchetypeSelectionScreen = () => {
         selectedArchetypeInSession: selectedArchetypeInSession || archetype,
         // Pass all archetype responses so they can be preserved when user goes back
         archetypeResponses,
+        // Flag to indicate crisis intervention was already shown on archetype screen
+        crisisInterventionShown,
       });
     }
   };
@@ -747,6 +776,13 @@ const ArchetypeSelectionScreen = () => {
       trigger={upgradeModalTrigger}
       userInput={userInput}
       archetypeName={upgradeModalArchetype}
+    />
+
+    {/* Crisis Intervention Modal - Shows immediately over archetype selection */}
+    <CrisisModal
+      visible={showCrisisModal}
+      onClose={() => setShowCrisisModal(false)}
+      userRegion="US"
     />
     </View>
   );

@@ -30,6 +30,7 @@ type FullSubliminalContentProps = {
     tags: string[];
     isHinderingEntry?: boolean;
   };
+  crisisInterventionShown?: boolean;
 };
 
 const CRISIS_RESOURCES = [
@@ -64,6 +65,7 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
   userInput,
   selectedArchetype,
   archetypeData,
+  crisisInterventionShown = false,
 }) => {
   // ═══ ALL HOOKS MUST BE AT THE TOP - NO CONDITIONAL LOGIC BEFORE HOOKS ═══
   const [fontsLoaded] = useFonts({
@@ -684,11 +686,12 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
   const isHinderingEntry = crisisLevel === 'hindering' || detectHinderingEntry();
   
   // TIER 3: Active Crisis - Show full-screen modal immediately (useEffect MUST be called consistently)
+  // Skip if crisis intervention was already shown on archetype selection screen
   useEffect(() => {
-    if (crisisLevel === 'crisis') {
+    if (crisisLevel === 'crisis' && !crisisInterventionShown) {
       setShowCrisisModal(true);
     }
-  }, [crisisLevel]);
+  }, [crisisLevel, crisisInterventionShown]);
 
   // Helper functions
   const truncateUserInput = (input: string, maxLines: number = 3): { truncated: string; needsTruncation: boolean } => {
@@ -728,7 +731,9 @@ export const FullSubliminalContent: React.FC<FullSubliminalContentProps> = ({
     userInput: userInput.substring(0, 50) + (userInput.length > 50 ? '...' : ''),
     crisisLevel,
     isHinderingEntry,
-    backendFlag: archetypeData.isHinderingEntry
+    backendFlag: archetypeData.isHinderingEntry,
+    crisisInterventionShown,
+    willSkipCrisisModal: crisisLevel === 'crisis' && crisisInterventionShown
   });
 
   // Early return AFTER all hooks have been called

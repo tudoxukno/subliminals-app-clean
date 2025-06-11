@@ -73,6 +73,7 @@ type RootStackParamList = {
     archetypeData: ArchetypeData;
     selectedArchetypeInSession?: string;
     archetypeResponses?: {[key: string]: ArchetypeData}; // Pass all responses for when user goes back
+    crisisInterventionShown?: boolean; // Flag to indicate crisis intervention was already shown
   };
   ShareSuite: {
     userInput: string;
@@ -88,7 +89,7 @@ type RoutePropType = RouteProp<RootStackParamList, 'FullSubliminalView'>;
 const FullSubliminalView = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
-  const { userInput, selectedArchetype, archetypeData, selectedArchetypeInSession, archetypeResponses } = route.params;
+  const { userInput, selectedArchetype, archetypeData, selectedArchetypeInSession, archetypeResponses, crisisInterventionShown } = route.params;
   const { incrementUsage } = useDailyUsage();
   const [showButtons, setShowButtons] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -401,6 +402,7 @@ const FullSubliminalView = () => {
             userInput={userInput}
             selectedArchetype={selectedArchetype}
             archetypeData={archetypeData}
+            crisisInterventionShown={crisisInterventionShown}
           />
         </ScrollView>
 
