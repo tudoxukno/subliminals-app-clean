@@ -7,7 +7,11 @@
     "dev": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build": "expo build",
+    "build-backend": "cd backend && npm run build",
+    "start-backend": "cd backend && npm start",
+    "dev-backend": "cd backend && npm run dev"
   },
   "dependencies": {
     "@expo-google-fonts/playfair-display": "^0.4.0",
