@@ -419,6 +419,13 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const checkAndShowBannerOnHomeReturn = (): void => {
+    // Never force banner for premium users
+    if (isPremiumUser) {
+      console.log('🏠 BANNER RESET BLOCKED: Premium user - no banner needed');
+      setShouldShowBannerOnHomeReturn(false);
+      return;
+    }
+    
     if (shouldShowBannerOnHomeReturn && dailyUsage > 0) {
       console.log('🏠 FORCING BANNER SHOW: User returned to home after new usage increment');
       setBannerDismissed(false);
@@ -428,6 +435,12 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const resetBannerForLimitAttempt = (): void => {
+    // Never reset banner for premium users
+    if (isPremiumUser) {
+      console.log('🚫 LIMIT ATTEMPT IGNORED: Premium user - no limits apply');
+      return;
+    }
+    
     if (isLimitReached) {
       console.log('🚫 LIMIT ATTEMPT: User tried to access content after hitting daily limit, resetting banner');
       setBannerDismissed(false);
@@ -441,6 +454,14 @@ export const DailyUsageProvider: React.FC<{ children: ReactNode }> = ({ children
       const subscription = await subscriptionService.getCurrentSubscription();
       setSubscriptionInfo(subscription);
       console.log('🔄 Subscription status refreshed:', subscription);
+      
+      // If user just became premium, clear banner state to prevent progress bars from showing
+      if (subscription.isActive && (subscription.tier === 'monthly' || subscription.tier === 'annual')) {
+        console.log('🎯 NEW PREMIUM USER: Clearing banner state to prevent progress bars');
+        setBannerDismissed(false);
+        setLastDismissedLevel(null);
+        setShouldShowBannerOnHomeReturn(false);
+      }
     } catch (error) {
       console.error('Error refreshing subscription:', error);
     }

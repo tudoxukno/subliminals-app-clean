@@ -45,11 +45,12 @@ export interface BackgroundGenerateResponse {
 // Fast text-only generation (no background images)
 export const generateSubliminalContentFast = async (
   userInput: string,
-  archetype: string
+  archetype: string,
+  crisisLevel?: 'normal' | 'hindering' | 'elevated' | 'crisis'
 ): Promise<string> => {
   try {
     console.log('⚡ Making fast API request to:', `${API_BASE_URL}/generate-fast`);
-    console.log('Request data:', { userInput, archetype });
+    console.log('Request data:', { userInput, archetype, crisisLevel });
     
     const response = await fetch(`${API_BASE_URL}/generate-fast`, {
       method: 'POST',
@@ -59,6 +60,7 @@ export const generateSubliminalContentFast = async (
       body: JSON.stringify({
         userInput: userInput.trim(),
         archetype,
+        crisisLevel,
       }),
     });
 

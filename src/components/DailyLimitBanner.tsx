@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDailyUsage } from '../context/DailyUsageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import subscriptionService from '../services/subscriptionService';
 
 interface DailyLimitBannerProps {
   onUpgradePress?: (level: 'high' | 'medium' | 'low') => void;
@@ -23,6 +24,9 @@ const { width: screenWidth } = Dimensions.get('window');
 export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePress }) => {
   const { showBanner, dismissBanner, resetBannerDismissal, getBannerConfig, dailyUsage, dailyLimit, bannerDismissed, isLimitReached } = useDailyUsage();
   const insets = useSafeAreaInsets();
+  
+  // Check premium status
+  const isPremiumUser = subscriptionService.hasUnlimitedAccess();
   
   // Get banner config directly - no need to memoize since it's a simple calculation
   const bannerConfig = getBannerConfig();
@@ -77,16 +81,17 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
     }
     
     // Show minimal indicator when banner is dismissed but user has some usage
-    if (bannerDismissed && dailyUsage > 0 && !showBanner) {
-      console.log('🔹 SHOWING minimal indicator:', { bannerDismissed, dailyUsage, showBanner, isLimitReached });
+    // NEVER show minimal indicator for premium users
+    if (!isPremiumUser && bannerDismissed && dailyUsage > 0 && !showBanner) {
+      console.log('🔹 SHOWING minimal indicator:', { bannerDismissed, dailyUsage, showBanner, isLimitReached, isPremiumUser });
       setShowMinimalIndicator(true);
       Animated.timing(indicatorOpacity, {
         toValue: 1,
         duration: 300,
         useNativeDriver: false,
       }).start();
-    } else if (!bannerDismissed || showBanner) {
-      console.log('🔸 HIDING minimal indicator:', { bannerDismissed, dailyUsage, showBanner, isLimitReached });
+    } else if (isPremiumUser || !bannerDismissed || showBanner) {
+      console.log('🔸 HIDING minimal indicator:', { bannerDismissed, dailyUsage, showBanner, isLimitReached, isPremiumUser });
       setShowMinimalIndicator(false);
       Animated.timing(indicatorOpacity, {
         toValue: 0,
@@ -94,7 +99,7 @@ export const DailyLimitBanner: React.FC<DailyLimitBannerProps> = ({ onUpgradePre
         useNativeDriver: false,
       }).start();
     }
-  }, [showBanner, isVisible, bannerDismissed, dailyUsage, isLimitReached]);
+  }, [showBanner, isVisible, bannerDismissed, dailyUsage, isLimitReached, isPremiumUser]);
 
   // Sparkle animation for visual appeal
   const startSparkleAnimation = () => {

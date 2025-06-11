@@ -305,8 +305,8 @@ const ArchetypeSelectionScreen = () => {
 
         const promises = archetypeNames.map(async (archetype) => {
           try {
-            console.log(`⚡ Fast generating ${archetype} preview...`);
-            const response = await generateSubliminalContentFast(userInput, archetype);
+            console.log(`⚡ Fast generating ${archetype} preview with crisis context:`, crisisLevel);
+            const response = await generateSubliminalContentFast(userInput, archetype, crisisLevel);
             console.log(`✅ ${archetype} preview generated successfully`);
             return { archetype, response };
           } catch (error) {
