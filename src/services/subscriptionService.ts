@@ -9,7 +9,7 @@ export const FREEMIUM_CONFIG = {
   dailyLimit: 3, // Free users get 3 subliminals per day
   saveLimit: 10, // Free users can save up to 10 subliminals
   aiBackgroundsPerDay: 1, // Free users get 1 AI-generated background per day
-  premiumArchetypes: ['Best Friend'], // Archetypes requiring premium
+  premiumArchetypes: ['Best Friend', 'Coach'], // Archetypes requiring premium
   premiumFeatures: [
     'unlimited_daily_subliminals',
     'all_archetypes',
@@ -62,7 +62,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     features: [
       'Unlimited subliminals',
       'Unlimited saves with cloud sync',
-      'All 5 archetypes including Best Friend',
+      'All 6 archetypes including Best Friend & Coach',
       'Switch between archetypes freely',
       'Unlimited AI-generated backgrounds',
       'Background regeneration & styles',

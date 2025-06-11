@@ -65,6 +65,10 @@ const ARCHETYPES = {
   'Best Friend': {
     icon: '🫶',
     tags: ["LOYAL", "SUPPORTIVE", "FAMILIAR"]
+  },
+  Coach: {
+    icon: '🧢',
+    tags: ["TACTICAL", "MOTIVATIONAL", "DIRECT"]
   }
 };
 

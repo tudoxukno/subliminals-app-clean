@@ -788,13 +788,15 @@ export async function generateSubliminalResponseFast(
     return result;
 
   } catch (error: any) {
-    console.error('❌ OpenAI API Error Details:', {
-      message: error?.message,
-      status: error?.status,
-      type: error?.type,
-      code: error?.code,
-      error: error?.error
-    });
+    // Only log if it's not a quota error (quota errors are expected and handled)
+    if (!error.message?.includes('quota') && error.status !== 429) {
+      console.error('❌ OpenAI API Error Details:', {
+        message: error?.message,
+        status: error?.status,
+        type: error?.type,
+        code: error?.code
+      });
+    }
     // Re-throw the error so server.ts can catch it and use Gemini fallback
     throw error;
   }
@@ -927,14 +929,15 @@ Respond in JSON format:
     return result;
 
   } catch (error: any) {
-    console.error('❌ OpenAI error:', error);
-    
     // Check if it's a quota/billing error and fall back to Gemini
     if (error.message?.includes('quota') || error.message?.includes('billing') || error.status === 429) {
       console.log('🔄 OpenAI quota exceeded, switching to Gemini...');
       const { generateSubliminalResponseWithGemini } = await import('./gemini');
       return generateSubliminalResponseWithGemini(userInput, archetypeName);
     }
+    
+    // Only log non-quota errors
+    console.error('❌ OpenAI error:', error);
     
     // For any other error, also fall back to Gemini
     console.log('🔄 OpenAI failed, falling back to Gemini...');
@@ -975,6 +978,12 @@ function getFallbackResponse(archetype: any, userInput: string): ArchetypeData {
       fullMessage: `Hey bestie, I'm right here with you, and I need you to know that what you're going through makes complete sense. You're not too much, you're not being dramatic, and you definitely don't need to apologize for feeling human. Be so for real - you've handled hard things before, and I've watched you grow in ways that still amaze me. It's giving strength even when you don't feel it. Not too much on my friend, but you're way more resilient than you're giving yourself credit for. I got you, always. We're going to get through this together, just like we always do.`,
       quote: `"You don't have to be perfect to be loved - I choose you on your messy days too, bestie."`,
       tags: ['loyalty', 'emotional-support', 'friendship', 'validation', 'unconditional-love']
+    },
+    Coach: {
+      response: `Here's the real talk. You're running drills in your head instead of getting on the field. Time to stop overthinking and start executing.`,
+      fullMessage: `Alright, listen up. I see what's happening here - you're treating this like it's the championship when it's just practice. That mental replay you're doing? That's not preparation, that's avoidance. You've got the fundamentals, you've put in the work, but now you're letting your head play games with you. Every athlete goes through this. The difference between good and great? Great ones trust their training and execute anyway. Your technique might not be perfect, but your heart's in the right place. Stop overthinking, start moving. This is your moment. Execute.`,
+      quote: `"Champions aren't made in the comfort zone - they're made when it's time to execute."`,
+      tags: ['discipline', 'mental-toughness', 'performance', 'action', 'coaching']
     }
   };
 
@@ -996,7 +1005,8 @@ const getSolidColorBackground = (archetype: string): string => {
     Therapist: '#7ED321',   // Soft green  
     Realist: '#9013FE',     // Purple
     Poet: '#FF6B6B',        // Soft red
-    BestFriend: '#FFD93D'   // Warm yellow
+    BestFriend: '#FFD93D',  // Warm yellow
+    Coach: '#FF8500'        // Athletic orange
   };
   
   const color = colors[archetype as keyof typeof colors] || '#6B73FF';
@@ -1022,7 +1032,8 @@ function createDefaultBackground(archetype: string): string {
     'Therapist': '#7ED321', 
     'Realist': '#9013FE',
     'Poet': '#FF6B6B',
-    'Best Friend': '#FFD93D'
+    'Best Friend': '#FFD93D',
+    'Coach': '#FF8500'
   };
   
   const color = colors[archetype as keyof typeof colors] || '#4A90E2';

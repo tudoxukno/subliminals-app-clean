@@ -153,11 +153,24 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   const getTriggerMessage = () => {
     const message = TRIGGER_MESSAGES[trigger];
     
+    // Archetype icon mapping
+    const archetypeIcons: { [key: string]: string } = {
+      'Best Friend': '🫶',
+      'Coach': '🧢',
+      'Mirror': '🪞',
+      'Therapist': '🫂',
+      'Realist': '🪓',
+      'Poet': '🌙',
+    };
+    
     // Customize message based on context
     if (trigger === 'premium_archetype' && archetypeName) {
+      const contextualIcon = archetypeIcons[archetypeName] || message.icon;
       return {
         ...message,
         subtitle: `${archetypeName} is a premium archetype`,
+        description: `Get access to ${archetypeName} and all future premium archetypes with your subscription.`,
+        icon: contextualIcon, // Use the archetype's specific icon
       };
     }
     
@@ -269,7 +282,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                   </View>
                   <View style={styles.highlightItem}>
                     <Ionicons name="people" size={20} color="#4CAF50" />
-                    <Text style={styles.highlightText}>All 5 Archetypes</Text>
+                    <Text style={styles.highlightText}>All 6 Archetypes</Text>
                   </View>
                   <View style={styles.highlightItem}>
                     <Ionicons name="swap-horizontal" size={20} color="#4CAF50" />
